@@ -82,11 +82,11 @@
                     <Order>1</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell -nologo -ExecutionPolicy RemoteSigned  -command "Get-WUInstall -AcceptAll -IgnoreReboot"</CommandLine>
+                    <CommandLine>powershell -nologo -ExecutionPolicy RemoteSigned  -command "Get-WUInstall -AcceptAll -AutoReboot"</CommandLine>
                     <Order>2</Order>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>shutdown /r /t 0</CommandLine>
+                    <CommandLine>C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:C:\tools\Unattend.xml</CommandLine>
                     <Order>3</Order>
                 </SynchronousCommand>
             </FirstLogonCommands>
@@ -102,7 +102,7 @@
                     <PlainText>true</PlainText>
                 </Password>
                 <Enabled>true</Enabled>
-                <LogonCount>1</LogonCount>
+                <LogonCount>2</LogonCount>
                 <Username>Administrator</Username>
             </AutoLogon>
             <ComputerName>*</ComputerName>
