@@ -20,7 +20,7 @@ Invoke-WebRequest -uri  "http://the.earth.li/~sgtatham/putty/latest/x86/pscp.exe
 $modules_dir = "$ENV:USERPROFILE\Documents\WindowsPowerShell\Modules"
 mkdir $modules_dir
 
-$filename = PSWindowsUpdate.zip
+$filename = "PSWindowsUpdate.zip"
 Invoke-WebRequest -Uri "http://gallery.technet.microsoft.com/scriptcenter/2d191bcd-3308-4edd-9de2-88dff796b0bc/file/41459/25/PSWindowsUpdate.zip" -OutFile $filename
 cmd /c "C:\Program Files\7-Zip\7z.exe" x -o%USERPROFILE%\Documents\WindowsPowerShell\Modules $filename
 del $filename
