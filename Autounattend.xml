@@ -77,6 +77,18 @@
                 <NetworkLocation>Work</NetworkLocation>
             </OOBE>
             <FirstLogonCommands>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>powershell -nologo -ExecutionPolicy RemoteSigned  -command "Invoke-WebRequest -Uri https://raw.github.com/cloudbase/unattended-setup-scripts/master/DeployTools.ps1 -OutFile C:\Windows\Temp\DeployTools.ps1 ; C:\Windows\Temp\DeployTools.ps1"</CommandLine>
+                    <Order>1</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>powershell -nologo -ExecutionPolicy RemoteSigned  -command "Get-WUInstall -AcceptAll -IgnoreReboot"</CommandLine>
+                    <Order>2</Order>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>shutdown /r /t 0</CommandLine>
+                    <Order>3</Order>
+                </SynchronousCommand>
             </FirstLogonCommands>
             <UserAccounts>
                 <AdministratorPassword>
@@ -84,6 +96,15 @@
                     <PlainText>true</PlainText>
                 </AdministratorPassword>
             </UserAccounts>
+            <AutoLogon>
+                <Password>
+                    <Value>Passw0rd</Value>
+                    <PlainText>true</PlainText>
+                </Password>
+                <Enabled>true</Enabled>
+                <LogonCount>1</LogonCount>
+                <Username>Administrator</Username>
+            </AutoLogon>
             <ComputerName>*</ComputerName>
         </component>
     </settings>
@@ -114,12 +135,7 @@
                     <Path>E:\setup64.exe /s /v /qn /l C:\Windows\Temp\vmware_tools_install.log</Path>
                     <Description>Install VMWare tools</Description>
                 </RunSynchronousCommand>
-                <RunSynchronousCommand wcm:action="add">
-                    <Order>1</Order>
-                    <Path>E:\setup64.exe /s /v /qn /l C:\Windows\Temp\vmware_tools_install.log</Path>
-                    <Description>Install VMWare tools</Description>
-                </RunSynchronousCommand>                
-            </RunSynchronous>            
+            </RunSynchronous>
         </component>
         <component name="Microsoft-Windows-SQMApi" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="NonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <CEIPEnabled>0</CEIPEnabled>

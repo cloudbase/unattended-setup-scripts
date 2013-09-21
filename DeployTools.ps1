@@ -25,3 +25,4 @@ Invoke-WebRequest -Uri "http://gallery.technet.microsoft.com/scriptcenter/2d191b
 cmd /c "C:\Program Files\7-Zip\7z.exe" x -o%USERPROFILE%\Documents\WindowsPowerShell\Modules $filename
 del $filename
 
+Invoke-WebRequest -uri "https://raw.github.com/cloudbase/unattended-setup-scripts/master/Unattend.xml" -OutFile "Unattend.xml"
