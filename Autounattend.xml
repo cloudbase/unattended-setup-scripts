@@ -76,12 +76,22 @@
                 <ProtectYourPC>3</ProtectYourPC>
                 <NetworkLocation>Work</NetworkLocation>
             </OOBE>
+            <!-- Use FirstLogonCommands instead of LogonCommands if you don't need to install Windows Updates -->            
             <LogonCommands>
                 <AsynchronousCommand wcm:action="add">
                     <CommandLine>powershell -NoLogo -ExecutionPolicy RemoteSigned  -File C:\Windows\Temp\UpdateAndSysprep.ps1</CommandLine>
+                    <Description>Installs Windows updates rebooting as many times as needed and executes Sysprep</Description>
                     <Order>1</Order>
                 </AsynchronousCommand>
             </LogonCommands>
+            <!--
+            <FirstLogonCommands>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:C:\tools\Unattend.xml</CommandLine>
+                    <Order>1</Order>
+                </SynchronousCommand>
+            </FirstLogonCommands>
+            -->            
             <UserAccounts>
                 <AdministratorPassword>
                     <Value>Passw0rd</Value>
@@ -94,7 +104,7 @@
                     <PlainText>true</PlainText>
                 </Password>
                 <Enabled>true</Enabled>
-                <LogonCount>10</LogonCount>
+                <LogonCount>50</LogonCount>
                 <Username>Administrator</Username>
             </AutoLogon>
             <ComputerName>*</ComputerName>
@@ -132,6 +142,7 @@
                     <Path>powershell -NoLogo -ExecutionPolicy RemoteSigned  -File C:\Windows\Temp\DeployTools.ps1</Path>
                     <Description>Execute tools deployment script</Description>
                 </RunSynchronousCommand>
+                <!-- Comment the following if you don't need VMWare tools -->
                 <RunSynchronousCommand wcm:action="add">
                     <Order>3</Order>
                     <Path>E:\setup64.exe /s /v "/qn REBOOT=ReallySuppress" /l C:\Windows\Temp\vmware_tools_install.log</Path>
