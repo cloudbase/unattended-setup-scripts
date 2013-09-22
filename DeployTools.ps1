@@ -22,9 +22,6 @@ Invoke-WebRequest -Uri "http://gallery.technet.microsoft.com/scriptcenter/2d191b
 & "C:\Program Files\7-Zip\7z.exe" x -oC:\Windows\System32\WindowsPowerShell\v1.0\Modules $filename
 del $filename
 
-Invoke-WebRequest -Uri "https://raw.github.com/cloudbase/unattended-setup-scripts/master/GetWindowsUpdates.ps1" -OutFile "GetWindowsUpdates.ps1"
+Invoke-WebRequest -Uri "https://raw.github.com/cloudbase/unattended-setup-scripts/master/UpdateAndSysprep.ps1" -OutFile "$ENV:SYSTEMROOT\Temp\GetWindowsUpdates.ps1"
 
-Invoke-WebRequest -uri "https://raw.github.com/cloudbase/unattended-setup-scripts/master/Unattend.xml" -OutFile "Unattend.xml"
-
-#mkdir C:\Windows\Setup\Scripts
-#Invoke-WebRequest -uri "https://github.com/cloudbase/unattended-setup-scripts/raw/master/SetupComplete.cmd" -OutFile "C:\Windows\Setup\Scripts\SetupComplete.cmd"
+Invoke-WebRequest -uri "https://raw.github.com/cloudbase/unattended-setup-scripts/master/Unattend.xml" -OutFile "$ENV:SYSTEMROOT\Temp\Unattend.xml"
