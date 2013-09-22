@@ -1,14 +1,15 @@
 #!/bin/sh
 set -e
 
-if [ $# -ne 3 ]; then
-    echo "Usage: $0 <datastore> <name> <external switch>"
+if [ $# -ne 4 ]; then
+    echo "Usage: $0 <datastore> <name> <switch> <nic>"
     exit 1
 fi
 
 DATASTORE=$1
 RDO_NAME=$2
 EXT_SWITCH=$3
+VMNIC=$4
 
 MGMT_NETWORK="$RDO_NAME"_mgmt
 DATA_NETWORK="$RDO_NAME"_data
@@ -26,7 +27,11 @@ QEMU_COMPUTE_VM_NAME="$RDO_NAME"_compute_qemu
 HYPERV_COMPUTE_VM_NAME="$RDO_NAME"_compute_hyperv
 
 /bin/vim-cmd hostsvc/net/portgroup_add $EXT_SWITCH $EXT_NETWORK
+/bin/vim-cmd hostsvc/net/portgroup_set --nicorderpolicy-active=$VMNIC $EXT_SWITCH $EXT_NETWORK
+
 /bin/vim-cmd hostsvc/net/portgroup_add $EXT_SWITCH $MGMT_NETWORK
+/bin/vim-cmd hostsvc/net/portgroup_set --nicorderpolicy-active=$VMNIC $EXT_SWITCH $MGMT_NETWORK
+
 ./create-esxi-switch.sh $DATA_NETWORK
 
 ./create-esxi-vm.sh $DATASTORE $LINUX_GUEST_OS $CONTROLLER_VM_NAME 1024 2 2 11G $LINUX_TEMPLATE - - - true "$MGMT_NETWORK"
