@@ -28,5 +28,6 @@ del $filename
 Invoke-WebRequest -Uri "https://raw.github.com/cloudbase/unattended-setup-scripts/master/GetWindowsUpdates.ps1" -OutFile "GetWindowsUpdates.ps1"
 
 Invoke-WebRequest -uri "https://raw.github.com/cloudbase/unattended-setup-scripts/master/Unattend.xml" -OutFile "Unattend.xml"
-mkdir C:\Windows\Setup\Scripts
-Invoke-WebRequest -uri "https://github.com/cloudbase/unattended-setup-scripts/raw/master/SetupComplete.cmd" -OutFile "C:\Windows\Setup\Scripts\SetupComplete.cmd"
+
+#mkdir C:\Windows\Setup\Scripts
+#Invoke-WebRequest -uri "https://github.com/cloudbase/unattended-setup-scripts/raw/master/SetupComplete.cmd" -OutFile "C:\Windows\Setup\Scripts\SetupComplete.cmd"
