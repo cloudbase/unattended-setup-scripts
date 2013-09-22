@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+#TODO: use getops for command line parsing
+
 DATASTORE=$1
 GUEST_OS=$2
 VM_NAME=$3
@@ -32,14 +34,16 @@ mkdir -p $BASE_DIR
 if [ "$VMDK_TEMPLATE_PATH" == "-" ]; then
     /sbin/vmkfstools -c $VMDK_SIZE -a $VMDK_ADAPTER -d $VMDK_FORMAT "$VMDK_PATH"
 else
-    # Note: $VMDK_SIZE is ignored
     /sbin/vmkfstools -i "$VMDK_TEMPLATE_PATH" "$VMDK_PATH" -a $VMDK_ADAPTER -d $VMDK_FORMAT
+    if [ "$VMDK_SIZE" != "-" ]; then
+        /sbin/vmkfstools -X $VMDK_SIZE "$VMDK_PATH"
+    fi
 fi
 
 cat << EOF > "$VMX_PATH"
 .encoding = "UTF-8"
 config.version = "8"
-virtualHW.version = "8"
+virtualHW.version = "9"
 pciBridge0.present = "TRUE"
 pciBridge4.present = "TRUE"
 pciBridge4.virtualDev = "pcieRootPort"
@@ -126,7 +130,7 @@ EOF
 done
 
 
-VMID=`/bin/vim-cmd solo/registervm "$VMX_PATH"`
+VMID=`/bin/vim-cmd solo/registervm "$VMX_PATH" "$VM_NAME"`
 if [ "$BOOT" == "true" ]; then
     /bin/vim-cmd vmsvc/power.on $VMID
 fi
