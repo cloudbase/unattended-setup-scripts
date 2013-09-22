@@ -19,7 +19,7 @@ Invoke-WebRequest -uri  "http://the.earth.li/~sgtatham/putty/latest/x86/pscp.exe
 
 $filename = "PSWindowsUpdate.zip"
 Invoke-WebRequest -Uri "http://gallery.technet.microsoft.com/scriptcenter/2d191bcd-3308-4edd-9de2-88dff796b0bc/file/41459/25/PSWindowsUpdate.zip" -OutFile $filename
-cmd /c "C:\Program Files\7-Zip\7z.exe" x -o%WINDIR%\System32\WindowsPowerShell\v1.0\Modules $filename
+& "C:\Program Files\7-Zip\7z.exe" x -oC:\Windows\System32\WindowsPowerShell\v1.0\Modules $filename
 del $filename
 
 Invoke-WebRequest -Uri "https://raw.github.com/cloudbase/unattended-setup-scripts/master/GetWindowsUpdates.ps1" -OutFile "GetWindowsUpdates.ps1"
