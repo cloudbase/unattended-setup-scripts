@@ -76,7 +76,7 @@
                 <ProtectYourPC>3</ProtectYourPC>
                 <NetworkLocation>Work</NetworkLocation>
             </OOBE>
-            <!-- Use FirstLogonCommands instead of LogonCommands if you don't need to install Windows Updates -->            
+            <!-- Use FirstLogonCommands instead of LogonCommands if you don't need to install Windows Updates -->
             <LogonCommands>
                 <AsynchronousCommand wcm:action="add">
                     <CommandLine>powershell -NoLogo -ExecutionPolicy RemoteSigned  -File C:\Windows\Temp\UpdateAndSysprep.ps1</CommandLine>
@@ -91,7 +91,7 @@
                     <Order>1</Order>
                 </SynchronousCommand>
             </FirstLogonCommands>
-            -->            
+            -->
             <UserAccounts>
                 <AdministratorPassword>
                     <Value>Passw0rd</Value>
@@ -148,8 +148,8 @@
                     <Path>E:\setup64.exe /s /v "/qn REBOOT=ReallySuppress" /l C:\Windows\Temp\vmware_tools_install.log</Path>
                     <Description>Install VMWare tools</Description>
                     <WillReboot>Always</WillReboot>
-                </RunSynchronousCommand>                
-            </RunSynchronous>                        
+                </RunSynchronousCommand>
+            </RunSynchronous>
         </component>
         <component name="Microsoft-Windows-SQMApi" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="NonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <CEIPEnabled>0</CEIPEnabled>

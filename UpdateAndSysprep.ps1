@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 Get-WUInstall -AcceptAll -IgnoreReboot
 if (Get-WURebootStatus -Silent)
-{ 
+{
     shutdown /r /t 0
 }
 else
