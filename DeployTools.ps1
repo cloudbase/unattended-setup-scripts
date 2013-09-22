@@ -27,5 +27,5 @@ del $filename
 
 Invoke-WebRequest -uri "https://raw.github.com/cloudbase/unattended-setup-scripts/master/Unattend.xml" -OutFile "Unattend.xml"
 
-mkdir C:\Windows\Setup\Scripts 
-echo "C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:C:\tools\Unattend.xml" > C:\Windows\Setup\Scripts\SetupComplete.cmd
+mkdir C:\Windows\Setup\Scripts
+Invoke-WebRequest -uri "https://github.com/cloudbase/unattended-setup-scripts/raw/master/SetupComplete.cmd" -OutFile "C:\Windows\Setup\Scripts\SetupComplete.cmd"
