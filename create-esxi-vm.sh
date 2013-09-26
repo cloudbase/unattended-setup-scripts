@@ -3,6 +3,11 @@ set -e
 
 #TODO: use getops for command line parsing
 
+if [ $# -lt 12 ]; then
+    echo "Usage: $0 <datastore> <guest_os> <vm_name> <ram> <vcpus> <vcores> <vmdk_size> <vmdk_template_path> <iso_path> <vmware_tools_iso> <floppy_template_path> <boot_vm> (<port_group_name>)*"
+    exit 1
+fi
+
 DATASTORE=$1
 GUEST_OS=$2
 VM_NAME=$3
