@@ -120,6 +120,17 @@
                     <Value>Passw0rd</Value>
                     <PlainText>true</PlainText>
                 </AdministratorPassword>
+                <!-- The following is needed on a client OS -->
+                <!--
+                <LocalAccounts>
+                    <LocalAccount wcm:action="add">
+                        <Description>Admin user</Description>
+                        <DisplayName>Admin</DisplayName>
+                        <Group>Administrators</Group>
+                        <Name>Admin</Name>
+                    </LocalAccount>
+                </LocalAccounts>
+                -->
             </UserAccounts>
             <AutoLogon>
                 <Password>
