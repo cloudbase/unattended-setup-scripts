@@ -18,18 +18,15 @@ ISO_SRC_TMP=`mktemp -d`
 ISO_DEST_TMP=`mktemp -d`
 
 echo "Mounting $ISO_SRC..."
-LOOP_DEV=`losetup --find`
-losetup $LOOP_DEV $ISO_SRC
-mount -o ro $LOOP_DEV $ISO_SRC_TMP
+mount -o ro,loop $ISO_SRC $ISO_SRC_TMP
 
 # Preserve the ISO label
-ISO_LABEL=`blkid -o value  $LOOP_DEV | awk 'NR == 1'`
+ISO_LABEL=`blkid -o value $ISO_SRC | awk 'NR == 1'`
 
 echo "Copying $ISO_SRC contents..."
 cp -a -r $ISO_SRC_TMP/. $ISO_DEST_TMP
 
 umount $ISO_SRC_TMP
-losetup -d $LOOP_DEV
 rmdir $ISO_SRC_TMP
 
 ISOLINUXCFG=$ISO_DEST_TMP/isolinux/isolinux.cfg
