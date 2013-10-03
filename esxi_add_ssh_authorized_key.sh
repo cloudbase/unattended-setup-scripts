@@ -3,7 +3,7 @@
 # Add your user's pub key to an ESXi host authorized keys
 # During the process you'll be prompted for the remote password twice
 
-if [ $# -ne 2 ]; then
+if [ $# -lt 2 ]; then
     echo "Usage: $0 <username> <esxi_host> [<pub_key_path>]"
     exit 1
 fi
