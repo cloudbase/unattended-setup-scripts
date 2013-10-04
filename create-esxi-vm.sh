@@ -3,24 +3,25 @@ set -e
 
 #TODO: use getops for command line parsing
 
-if [ $# -lt 12 ]; then
-    echo "Usage: $0 <datastore> <guest_os> <vm_name> <ram> <vcpus> <vcores> <vmdk_size> <vmdk_template_path> <iso_path> <vmware_tools_iso> <floppy_template_path> <boot_vm> (<port_group_name>)*"
+if [ $# -lt 13 ]; then
+    echo "Usage: $0 <datastore> <guest_os> <vm_name> <resource_pool_name> <ram> <vcpus> <vcores> <vmdk_size> <vmdk_template_path> <iso_path> <vmware_tools_iso> <floppy_template_path> <boot_vm> (<port_group_name>)*"
     exit 1
 fi
 
 DATASTORE=$1
 GUEST_OS=$2
 VM_NAME=$3
-RAM=$4
-VCPUS=$5
-VCORES=$6
-VMDK_SIZE=$7
-VMDK_TEMPLATE_PATH=$8
-ISO_PATH=$9
-VMWARE_TOOLS_ISO=$10
-FLOPPY_TEMPLATE_PATH=$11
-BOOT=$12
-FIRST_NETWORK_IDX=13
+POOL_NAME=$4
+RAM=$5
+VCPUS=$6
+VCORES=$7
+VMDK_SIZE=$8
+VMDK_TEMPLATE_PATH=$9
+ISO_PATH=$10
+VMWARE_TOOLS_ISO=$11
+FLOPPY_TEMPLATE_PATH=$12
+BOOT=$13
+FIRST_NETWORK_IDX=14
 
 VMDK_FILE_NAME=$VM_NAME.vmdk
 FLOPPY_FILE_NAME=floppy.flp
@@ -34,14 +35,48 @@ FLOPPY_PATH="${BASE_DIR%%/}/$FLOPPY_FILE_NAME"
 VMDK_FORMAT=thin
 VMDK_ADAPTER=lsisas
 
+if [ "$POOL_NAME" != "-" ]; then
+    POOL_ID=`sed -rn 'N; s/\ +<name>'"$POOL_NAME"'<\/name>\n\ +<objID>(.+)<\/objID>/\1/p' /etc/vmware/hostd/pools.xml`
+    if [ -z "$POOL_ID" ]; then
+        echo "Resource pool $POOL_NAME not found"
+        exit 1
+    fi
+fi
+
 mkdir -p $BASE_DIR
 
 if [ "$VMDK_TEMPLATE_PATH" == "-" ]; then
     /sbin/vmkfstools -c $VMDK_SIZE -a $VMDK_ADAPTER -d $VMDK_FORMAT "$VMDK_PATH"
 else
-    /sbin/vmkfstools -i "$VMDK_TEMPLATE_PATH" "$VMDK_PATH" -a $VMDK_ADAPTER -d $VMDK_FORMAT
-    if [ "$VMDK_SIZE" != "-" ]; then
-        /sbin/vmkfstools -X $VMDK_SIZE "$VMDK_PATH"
+    PARENT_FILE_HINT=`grep parentFileNameHint "$VMDK_TEMPLATE_PATH" || EXIT=$?`
+
+    if [ -n "$PARENT_FILE_HINT" ]; then
+        # TODO: investigate why when creating a VM with a linked vmdk the base disk gets deleted
+        # if the VM is started right after the registration
+        BOOT=false
+        LINKED_SNAPSHOT=true
+
+        cp "$VMDK_TEMPLATE_PATH" "$VMDK_PATH"
+
+        VMDK_TEMPLATE_DELTA_PATH=${VMDK_TEMPLATE_PATH%.*}-delta.vmdk
+        VMDK_DELTA_PATH=${VMDK_PATH%.*}-delta.vmdk
+        
+        cp "$VMDK_TEMPLATE_DELTA_PATH" "$VMDK_DELTA_PATH"
+
+        # Get the real path, without symlinks
+        VMDK_TEMPLATE_PATH_REAL=`readlink -f $VMDK_TEMPLATE_PATH`
+
+        VMDK_TEMPLATE_DIR_ESC=`dirname $VMDK_TEMPLATE_PATH_REAL | sed 's/\//\\\\\//g'`
+        sed -i "s/parentFileNameHint=\"/parentFileNameHint=\"$VMDK_TEMPLATE_DIR_ESC\//g" "$VMDK_PATH"  
+        
+        VMDK_TEMPLATE_DELTA_BASENAME=`basename "$VMDK_TEMPLATE_DELTA_PATH"`
+        VMDK_DELTA_BASENAME=`basename "$VMDK_DELTA_PATH"`
+        sed -i "s/$VMDK_TEMPLATE_DELTA_BASENAME/$VMDK_DELTA_BASENAME/g" "$VMDK_PATH"
+    else
+        /sbin/vmkfstools -i "$VMDK_TEMPLATE_PATH" "$VMDK_PATH" -a $VMDK_ADAPTER -d $VMDK_FORMAT
+        if [ "$VMDK_SIZE" != "-" ]; then
+            /sbin/vmkfstools -X $VMDK_SIZE "$VMDK_PATH"
+        fi
     fi
 fi
 
@@ -91,6 +126,12 @@ tools.syncTime = "FALSE"
 bios.bootOrder = "hdd,cdrom,floppy"
 EOF
 
+if [ -n "$LINKED_SNAPSHOT" ]; then
+    cat << EOF >> "$VMX_PATH"
+snapshot.redoNotWithParent = "true"
+EOF
+fi
+
 if [ "$ISO_PATH" != "-" ]; then
     cat << EOF >> "$VMX_PATH" 
 ide1:0.startConnected = "TRUE" 
@@ -135,10 +176,10 @@ EOF
 done
 
 
-VMID=`/bin/vim-cmd solo/registervm "$VMX_PATH" "$VM_NAME"`
+VMID=`/bin/vim-cmd solo/registervm "$VMX_PATH" "$VM_NAME" $POOL_ID`
 if [ "$BOOT" == "true" ]; then
     /bin/vim-cmd vmsvc/power.on $VMID
 fi
 
-#/bin/vim-cmd vmsvc/tools.install $VMID
+echo "VMID: $VMID"
 
