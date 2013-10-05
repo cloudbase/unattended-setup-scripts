@@ -23,10 +23,13 @@ BASEDIR=$(dirname $0)
 
 for USER_NAME in `$BASEDIR/get-esxi-users.sh`
 do
-    isinlist $USER_NAME "root,dcui,vpxuser,$EXCLUDED_USER_NAMES"
-    if [ "$?" -ne "1" ]; then
+    EXIT=0
+    isinlist $USER_NAME "root,dcui,vpxuser,$EXCLUDED_USER_NAMES" || EXIT=$?
+    if [ "$EXIT" -ne "1" ]; then
         echo "Applying permissions for $USER_NAME"
         $BASEDIR/add-esxi-vm-permission.sh $VM_NAME $USER_NAME $ROLE_NAME
+    else
+        echo "Skipping user $USER_NAME"
     fi
 done
 
