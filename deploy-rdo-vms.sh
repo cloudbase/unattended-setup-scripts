@@ -22,8 +22,8 @@ POOL_NAME=$RDO_NAME
 LINUX_GUEST_OS=rhel6-64
 HYPERV_GUEST_OS=winhyperv
 
-LINUX_TEMPLATE=/vmfs/volumes/datastore1/centos-6.4-template/centos-6.4-template.vmdk
-HYPERV_TEMPLATE=/vmfs/volumes/datastore1/hyperv-2012-template/hyperv-2012-template.vmdk
+LINUX_TEMPLATE=/vmfs/volumes/datastore1/centos-6.4-template/centos-6.4-template-000001.vmdk
+HYPERV_TEMPLATE=/vmfs/volumes/datastore1/hyperv-2012-template/hyperv-2012-template-000001.vmdk
 
 CONTROLLER_VM_NAME="$RDO_NAME"_controller
 NETWORK_VM_NAME="$RDO_NAME"_network
@@ -32,7 +32,7 @@ HYPERV_COMPUTE_VM_NAME="$RDO_NAME"_compute_hyperv
 
 POOL_ID=`$BASEDIR/get-esxi-resource-pool-id.sh $POOL_NAME`
 if [ -z $POOL_ID ]; then
-    $BASEDIR/create-esxi-resource-pool.sh $POOL_NAME
+    $BASEDIR/create-esxi-resource-pool.sh $POOL_NAME > /dev/null
 fi
 
 PORTGROUP_EXISTS=`$BASEDIR/check-esxi-portgroup-exists.sh "$EXT_NETWORK"`
@@ -62,10 +62,31 @@ $BASEDIR/create-esxi-vm.sh $DATASTORE $LINUX_GUEST_OS $NETWORK_VM_NAME $POOL_NAM
 $BASEDIR/create-esxi-vm.sh $DATASTORE $LINUX_GUEST_OS $QEMU_COMPUTE_VM_NAME $POOL_NAME 4096 2 2 30G $LINUX_TEMPLATE - - - false "$MGMT_NETWORK" "$DATA_NETWORK"
 $BASEDIR/create-esxi-vm.sh $DATASTORE $HYPERV_GUEST_OS $HYPERV_COMPUTE_VM_NAME $POOL_NAME 4096 2 2 60G $HYPERV_TEMPLATE - - - false "$MGMT_NETWORK" "$DATA_NETWORK" 
 
-#sleep 20
+sleep 20
 
-$BASEDIR/power-on-esxi-vm.sh "$CONTROLLER_VM_NAME"
-$BASEDIR/power-on-esxi-vm.sh "$NETWORK_VM_NAME"
-$BASEDIR/power-on-esxi-vm.sh "$QEMU_COMPUTE_VM_NAME"
-$BASEDIR/power-on-esxi-vm.sh "$HYPERV_COMPUTE_VM_NAME"
+echo "Powering on $CONTROLLER_VM_NAME"
+$BASEDIR/power-on-esxi-vm.sh "$CONTROLLER_VM_NAME" > /dev/null
+echo "Powering on $NETWORK_VM_NAME"
+$BASEDIR/power-on-esxi-vm.sh "$NETWORK_VM_NAME" > /dev/null
+echo "Powering on $QEMU_COMPUTE_VM_NAME"
+$BASEDIR/power-on-esxi-vm.sh "$QEMU_COMPUTE_VM_NAME" > /dev/null
+echo "Powering on $HYPERV_COMPUTE_VM_NAME"
+$BASEDIR/power-on-esxi-vm.sh "$HYPERV_COMPUTE_VM_NAME" > /dev/null
+
+# So far so good. Get the VM ips
+
+echo "Waiting for guest IPs..."
+
+INTERVAL=5
+MAX_WAIT=600
+
+CONTROLLER_VM_IP=`$BASEDIR/get-esxi-vm-guest-ip-address-wait.sh "$CONTROLLER_VM_NAME" "$MGMT_NETWORK" true $INTERVAL $MAX_WAIT`
+NETWORK_VM_IP=`$BASEDIR/get-esxi-vm-guest-ip-address-wait.sh "$NETWORK_VM_NAME" "$MGMT_NETWORK" true $INTERVAL $MAX_WAIT`
+QEMU_COMPUTE_VM_IP=`$BASEDIR/get-esxi-vm-guest-ip-address-wait.sh "$QEMU_COMPUTE_VM_NAME" "$MGMT_NETWORK" true $INTERVAL $MAX_WAIT`
+HYPERV_COMPUTE_VM_IP=`$BASEDIR/get-esxi-vm-guest-ip-address-wait.sh "$HYPERV_COMPUTE_VM_NAME" "$MGMT_NETWORK" true $INTERVAL $MAX_WAIT`
+
+echo "$CONTROLLER_VM_NAME":"$CONTROLLER_VM_IP"
+echo "$NETWORK_VM_NAME":"$NETWORK_VM_IP"
+echo "$QEMU_COMPUTE_VM_NAME":"$QEMU_COMPUTE_VM_IP"
+echo "$HYPERV_COMPUTE_VM_NAME":"$HYPERV_COMPUTE_VM_IP"
 
