@@ -1,10 +1,17 @@
-SSHUSER=$1
-IP=$2
-PWD=$3
-ARGS=$4
+#!/bin/sh
+set -e
+
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <ssh_user>@<ssh_host> <ssh_password> [<ssh_command>]"
+    exit 1
+fi
+
+SSHUSER_HOST=$1
+PWD=$2
+ARGS=$3
 
 /usr/bin/expect <<EOD
-spawn ssh -oStrictHostKeyChecking=no $SSHUSER@$IP "$ARGS"
+spawn ssh -oStrictHostKeyChecking=no -oCheckHostIP=no $SSHUSER_HOST "$ARGS"
 expect "password"
 send "$PWD\n" 
 expect eof
