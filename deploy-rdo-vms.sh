@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-if [ $# -ne 4 ]; then
-    echo "Usage: $0 <datastore> <name> <switch> <nic>"
+if [ $# -lt 4 ]; then
+    echo "Usage: $0 <datastore> <name> <switch> <nic> [<guest_ips_file_name>]"
     exit 1
 fi
 
@@ -12,6 +12,7 @@ DATASTORE=$1
 RDO_NAME=$2
 EXT_SWITCH=$3
 VMNIC=$4
+GUEST_IPS_FILENAME=$5
 
 MGMT_NETWORK="$RDO_NAME"_mgmt
 DATA_NETWORK="$RDO_NAME"_data
@@ -81,12 +82,18 @@ INTERVAL=5
 MAX_WAIT=600
 
 CONTROLLER_VM_IP=`$BASEDIR/get-esxi-vm-guest-ip-address-wait.sh "$CONTROLLER_VM_NAME" "$MGMT_NETWORK" true $INTERVAL $MAX_WAIT`
-NETWORK_VM_IP=`$BASEDIR/get-esxi-vm-guest-ip-address-wait.sh "$NETWORK_VM_NAME" "$MGMT_NETWORK" true $INTERVAL $MAX_WAIT`
-QEMU_COMPUTE_VM_IP=`$BASEDIR/get-esxi-vm-guest-ip-address-wait.sh "$QEMU_COMPUTE_VM_NAME" "$MGMT_NETWORK" true $INTERVAL $MAX_WAIT`
-HYPERV_COMPUTE_VM_IP=`$BASEDIR/get-esxi-vm-guest-ip-address-wait.sh "$HYPERV_COMPUTE_VM_NAME" "$MGMT_NETWORK" true $INTERVAL $MAX_WAIT`
-
 echo "$CONTROLLER_VM_NAME":"$CONTROLLER_VM_IP"
+NETWORK_VM_IP=`$BASEDIR/get-esxi-vm-guest-ip-address-wait.sh "$NETWORK_VM_NAME" "$MGMT_NETWORK" true $INTERVAL $MAX_WAIT`
 echo "$NETWORK_VM_NAME":"$NETWORK_VM_IP"
+QEMU_COMPUTE_VM_IP=`$BASEDIR/get-esxi-vm-guest-ip-address-wait.sh "$QEMU_COMPUTE_VM_NAME" "$MGMT_NETWORK" true $INTERVAL $MAX_WAIT`
 echo "$QEMU_COMPUTE_VM_NAME":"$QEMU_COMPUTE_VM_IP"
+HYPERV_COMPUTE_VM_IP=`$BASEDIR/get-esxi-vm-guest-ip-address-wait.sh "$HYPERV_COMPUTE_VM_NAME" "$MGMT_NETWORK" true $INTERVAL $MAX_WAIT`
 echo "$HYPERV_COMPUTE_VM_NAME":"$HYPERV_COMPUTE_VM_IP"
+
+if [ -n "$GUEST_IPS_FILENAME" ]; then
+    echo "$CONTROLLER_VM_NAME":"$CONTROLLER_VM_IP" > "$GUEST_IPS_FILENAME"
+    echo "$NETWORK_VM_NAME":"$NETWORK_VM_IP" >> "$GUEST_IPS_FILENAME"
+    echo "$QEMU_COMPUTE_VM_NAME":"$QEMU_COMPUTE_VM_IP" >> "$GUEST_IPS_FILENAME"
+    echo "$HYPERV_COMPUTE_VM_NAME":"$HYPERV_COMPUTE_VM_IP" >> "$GUEST_IPS_FILENAME"
+fi
 
