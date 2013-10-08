@@ -111,7 +111,7 @@ check_interface_exists () {
     IFACE=$2
 
     IFACE_EXISTS=0
-    run_ssh_cmd_with_retry $SSHUSER_HOST "ifconfig $IFACE || IFACE_EXISTS=$?"
+    run_ssh_cmd_with_retry $SSHUSER_HOST "ifconfig $IFACE" || IFACE_EXISTS=1
     return $IFACE_EXISTS
 }
 
