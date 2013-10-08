@@ -104,6 +104,62 @@ set_hostname $RDO_ADMIN@$NETWORK_VM_IP $NETWORK_VM_NAME.$DOMAIN $NETWORK_VM_IP
 config_openstack_network_adapter $RDO_ADMIN@$QEMU_COMPUTE_VM_IP eth1
 set_hostname $RDO_ADMIN@$QEMU_COMPUTE_VM_IP $QEMU_COMPUTE_VM_NAME.$DOMAIN $QEMU_COMPUTE_VM_IP
 
+echo "Validating network configuration"
+
+check_interface_exists () {
+    SSHUSER_HOST=$1
+    IFACE=$2
+
+    IFACE_EXISTS=0
+    run_ssh_cmd_with_retry $SSHUSER_HOST "ifconfig $IFACE || IFACE_EXISTS=$?"
+    return $IFACE_EXISTS
+}
+
+set_interface_ip () {
+    SSHUSER_HOST=$1
+    IFACE=$2
+    IFADDR=$3
+    ACTION=$4
+
+    run_ssh_cmd_with_retry $SSHUSER_HOST "ip addr $ACTION $IFADDR dev $IFACE"
+}
+
+set_test_network_config () {
+    SSHUSER_HOST=$1
+    IFADDR=$2
+    ACTION=$3
+
+    if check_interface_exists $SSHUSER_HOST br-eth1; then
+        IFACE=br-eth1
+    else
+        IFACE=eth1
+    fi
+
+    set_interface_ip $SSHUSER_HOST $IFACE $IFADDR $ACTION
+}
+
+ping_ip () {
+    SSHUSER_HOST=$1
+    IP=$2
+
+    run_ssh_cmd_with_retry $SSHUSER_HOST "ping -c1 $IP"
+}
+
+TEST_IP_BASE=10.13.8
+NETWORK_VM_TEST_IP=$TEST_IP_BASE.1
+QEMU_COMPUTE_VM_TEST_IP=$TEST_IP_BASE.1
+
+set_test_network_config $RDO_ADMIN@$NETWORK_VM_IP $NETWORK_VM_TEST_IP/24 add
+set_test_network_config $RDO_ADMIN@$QEMU_COMPUTE_VM_IP $QEMU_COMPUTE_VM_TEST_IP/24 add
+
+ping_ip $RDO_ADMIN@$NETWORK_VM_IP $QEMU_COMPUTE_VM_TEST_IP
+ping_ip $RDO_ADMIN@$QEMU_COMPUTE_VM_IP $NETWORK_VM_TEST_IP
+
+set_test_network_config $RDO_ADMIN@$NETWORK_VM_IP $NETWORK_VM_TEST_IP/24 del
+set_test_network_config $RDO_ADMIN@$QEMU_COMPUTE_VM_IP $QEMU_COMPUTE_VM_TEST_IP/24 del
+
+# TODO: Check external network
+
 echo "Installing RDO RPMs on controller"
 
 run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "yum install -y http://rdo.fedorapeople.org/openstack/openstack-grizzly/rdo-release-grizzly.rpm || EXIT=$?"
