@@ -44,5 +44,6 @@ while [ $COUNTER -lt $MAX_WAIT ]; do
     let COUNTER=COUNTER+$INTERVAL
 done
 
+echoerr "Max wait interval of $MAX_WAIT seconds exceeded"
 exit 1
 
