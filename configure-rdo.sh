@@ -1,9 +1,22 @@
 #!/bin/bash
 set -e
 
-ESXI_USER=root
-ESXI_HOST=10.7.2.2
-IPS_FILE_NAME=/tmp/ips.txt
+if [ $# -ne 9 ]; then
+    echo "Usage: $0 <esxi_user> <esxi_host> <ssh_key_file> <controller_host_name> <controller_host_ip> <network_host_name> <network_host_ip> <qemu_compute_host_name> <qemu_compute_host_ip>"
+    exit 1
+fi
+
+ESXI_USER=$1
+ESXI_HOST=$2
+
+SSH_KEY_FILE=$3
+
+CONTROLLER_VM_NAME=$4
+CONTROLLER_VM_IP=$5
+NETWORK_VM_NAME=$6
+NETWORK_VM_IP=$7
+QEMU_COMPUTE_VM_NAME=$8
+QEMU_COMPUTE_VM_IP=$9
 
 RDO_ADMIN=root
 RDO_ADMIN_PASSWORD=Passw0rd
@@ -16,11 +29,10 @@ MAX_WAIT_SECONDS=600
 
 BASEDIR=$(dirname $0)
 
-read CONTROLLER_VM_NAME CONTROLLER_VM_IP NETWORK_VM_NAME NETWORK_VM_IP QEMU_COMPUTE_VM_NAME QEMU_COMPUTE_VM_IP HYPERV_COMPUTE_VM_NAME HYPERV_COMPUTE_VM_IP <<< `ssh $ESXI_USER@$ESXI_HOST "cat $IPS_FILE_NAME" | perl -n -e'/^(.+)\:(.+)$/ && print "$1\n$2\n"'`
-
-SSH_KEY_FILE=`mktemp -u /tmp/rdo.XXXXXX`
+if [ ! -f "$SSH_KEY_FILE" ]; then
+    ssh-keygen -q -t rsa -f $SSH_KEY_FILE -N "" -b 4096
+fi
 SSH_KEY_FILE_PUB=$SSH_KEY_FILE.pub
-ssh-keygen -q -t rsa -f $SSH_KEY_FILE -N "" -b 4096
 
 wait_for_listening_port () {
     HOST=$1
