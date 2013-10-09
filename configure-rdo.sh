@@ -229,10 +229,10 @@ install_3x_kernel () {
     run_ssh_cmd_with_retry $SSHUSER_HOST "yum install -y centos-release-xen && yum update -y --disablerepo=* --enablerepo=Xen4CentOS kernel" 
 }
 
-echo "Installing 3.x kernel on network and compute nodes"
+#echo "Installing 3.x kernel on network and compute nodes"
 
-install_3x_kernel $RDO_ADMIN@$NETWORK_VM_IP
-install_3x_kernel $RDO_ADMIN@$QEMU_COMPUTE_VM_IP
+#install_3x_kernel $RDO_ADMIN@$NETWORK_VM_IP
+#install_3x_kernel $RDO_ADMIN@$QEMU_COMPUTE_VM_IP
 
 echo "Rebooting nodes to load the new kernel"
 
