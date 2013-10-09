@@ -217,6 +217,9 @@ run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "openstack-config --set /etc
 echo "Enabling Quantum firewall driver on controller"
 run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "sed -i 's/^#\ firewall_driver/firewall_driver/g' /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini && service quantum-server restart"
 
+echo "Set libvirt_type on QEMU/KVM compute node"
+run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP "grep vmx /proc/cpuinfo > /dev/null && openstack-config --set /etc/nova/nova.conf DEFAULT libvirt_type kvm || true"
+
 echo "Applying additional OVS configuration on $NETWORK_VM_IP"
 
 run_ssh_cmd_with_retry $RDO_ADMIN@$NETWORK_VM_IP "ovs-vsctl list-ports br-ex | grep eth2 || ovs-vsctl add-port br-ex eth2"
