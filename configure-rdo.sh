@@ -206,6 +206,9 @@ echo "Running Packstack"
 
 run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "packstack --answer-file=$ANSWERS_FILE"
 
+echo "Disabling Nova API rate limits"
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "openstack-config --set /etc/nova/nova.conf DEFAULT api_rate_limit False"
+
 echo "Enabling Quantum firewall driver on controller"
 run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "sed -i 's/^#\ firewall_driver/firewall_driver/g' /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini && service quantum-server restart"
 
