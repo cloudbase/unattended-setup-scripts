@@ -65,6 +65,7 @@ run_ssh_cmd () {
 run_ssh_cmd_with_retry () {
     SSHUSER_HOST=$1
     CMD=$2
+    INTERVAL=$3
     MAX_RETRIES=10
 
     COUNTER=0
@@ -75,6 +76,10 @@ run_ssh_cmd_with_retry () {
             return 0
         fi
         let COUNTER=COUNTER+1
+
+        if [ -n "$INTERVAL" ]; then
+            sleep $INTERVAL
+        fi
     done
     return $EXIT
 }
@@ -236,9 +241,9 @@ echo "Validating configuration"
 
 wait_for_listening_port $CONTROLLER_VM_IP 22 $MAX_WAIT_SECONDS
 
-run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "source ./keystonerc_admin && nova service-list | sed -e '$d' | awk '(NR > 3) {print $10}' | sed -rn '/down/q1'"
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "source ./keystonerc_admin && nova service-list | sed -e '$d' | awk '(NR > 3) {print $10}' | sed -rn '/down/q1'" 10
 
-run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "source ./keystonerc_admin && quantum agent-list -f csv | sed -e '1d' | sed -rn 's/\".*\",\".*\",\".*\",\"(.*)\",.*/\1/p' | sed -rn '/xxx/q1'"
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "source ./keystonerc_admin && quantum agent-list -f csv | sed -e '1d' | sed -rn 's/\".*\",\".*\",\".*\",\"(.*)\",.*/\1/p' | sed -rn '/xxx/q1'" 10
 
 echo "RDO installed!!"
 
