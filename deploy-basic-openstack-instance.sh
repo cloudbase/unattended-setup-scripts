@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 wget http://dev.centos.org/centos/hyper-v/CentOS-6.4-x86_64-Minimal-OpenStack.image.qcow2.bz2
 bunzip2 CentOS-6.4-x86_64-Minimal-OpenStack.image.qcow2.bz2
@@ -8,7 +9,7 @@ mkdir -p ~/.ssh
 nova keypair-add key1 > ~/.ssh/id_rsa
 chmod 600 ~/.ssh/id_rsa
 
-quantum net-create net1 | awk '{if (NR == 6) {print $4}}'`
+NET1=`quantum net-create net1 | awk '{if (NR == 6) {print $4}}'`
 SUBNETID1=`quantum subnet-create net1 10.0.1.0/24 --dns_nameservers list=true 8.8.8.8 | awk '{if (NR == 11) {print $4}}'`
 
 ROUTERID1=`quantum router-create router1 | awk '{if (NR == 7) {print $4}}'`
