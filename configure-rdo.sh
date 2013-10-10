@@ -90,9 +90,9 @@ update_host_date () {
 }
 
 echo "Sync hosts date and time"
-update_host_date $CONTROLLER_VM_IP
-update_host_date $NETWORK_VM_IP
-update_host_date $QEMU_COMPUTE_VM_IP
+update_host_date $RDO_ADMIN@$CONTROLLER_VM_IP
+update_host_date $RDO_ADMIN@$NETWORK_VM_IP
+update_host_date $RDO_ADMIN@$QEMU_COMPUTE_VM_IP
 
 config_openstack_network_adapter () {
     SSHUSER_HOST=$1
