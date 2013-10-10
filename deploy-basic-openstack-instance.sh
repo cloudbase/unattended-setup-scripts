@@ -21,5 +21,6 @@ quantum subnet-create ext_net --allocation-pool start=10.7.201.50,end=10.7.201.2
 
 quantum router-gateway-set $ROUTERID1 $EXTNETID1
 
+NETID1=`quantum net-show net1 | awk '{if (NR == 5) {print $4}}'`
 nova boot  --flavor 1 --image "CentOS-6.4-x86_64-Minimal-OpenStack" --key-name key1 --nic net-id=$NETID1 vm1
 
