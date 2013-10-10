@@ -251,7 +251,7 @@ run_ssh_cmd_with_retry $RDO_ADMIN@$NETWORK_VM_IP reboot
 run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP reboot
 
 echo "Wait for reboot"
-sleep 60
+sleep 120
 
 wait_for_listening_port $CONTROLLER_VM_IP 22 $MAX_WAIT_SECONDS
 
@@ -271,4 +271,5 @@ run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "source ./keystonerc_admin &
 
 echo "RDO installed!"
 echo "Controller IP: $CONTROLLER_VM_IP"
+echo "SSH key file: $SSH_KEY_FILE"
 
