@@ -253,6 +253,7 @@ run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP reboot
 echo "Wait for reboot"
 sleep 120
 
+echo "Waiting for SSH to be available on $CONTROLLER_VM_IP"
 wait_for_listening_port $CONTROLLER_VM_IP 22 $MAX_WAIT_SECONDS
 
 #echo "Restarting Nova services on controller"
