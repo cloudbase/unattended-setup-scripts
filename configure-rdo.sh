@@ -84,6 +84,16 @@ run_ssh_cmd_with_retry () {
     return $EXIT
 }
 
+update_host_date () {
+    SSHUSER_HOST=$1
+    run_ssh_cmd_with_retry $SSHUSER_HOST "ntpdate pool.ntp.org"
+}
+
+echo "Sync hosts date and time"
+update_host_date $CONTROLLER_VM_IP
+update_host_date $NETWORK_VM_IP
+update_host_date $QEMU_COMPUTE_VM_IP
+
 config_openstack_network_adapter () {
     SSHUSER_HOST=$1
     ADAPTER=$2    
@@ -245,13 +255,13 @@ sleep 60
 
 wait_for_listening_port $CONTROLLER_VM_IP 22 $MAX_WAIT_SECONDS
 
-echo "Restarting Nova services on controller"
-run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "for SVC in \`chkconfig --list | grep openstack-nova | grep ":on" | awk '{ print \$1 }'\`; do service \$SVC restart; done"
+#echo "Restarting Nova services on controller"
+#run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "for SVC in \`chkconfig --list | grep openstack-nova | grep ":on" | awk '{ print \$1 }'\`; do service \$SVC restart; done"
 
-echo "Restarting Nova services on QEMU/KVM compute node"
-run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP "for SVC in \`chkconfig --list | grep openstack-nova | grep ":on" | awk '{ print \$1 }'\`; do service \$SVC restart; done"
+#echo "Restarting Nova services on QEMU/KVM compute node"
+#run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP "for SVC in \`chkconfig --list | grep openstack-nova | grep ":on" | awk '{ print \$1 }'\`; do service \$SVC restart; done"
 
-sleep 5
+#sleep 5
 
 echo "Validating Nova configuration"
 run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "source ./keystonerc_admin && nova service-list | sed -e '$d' | awk '(NR > 3) {print $10}' | sed -rn '/down/q1'" 10
