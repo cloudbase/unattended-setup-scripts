@@ -241,7 +241,7 @@ run_ssh_cmd_with_retry $RDO_ADMIN@$NETWORK_VM_IP reboot
 run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP reboot
 
 echo "Wait for reboot"
-sleep 30
+sleep 60
 
 echo "Validating configuration"
 
