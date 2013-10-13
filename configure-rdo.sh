@@ -39,6 +39,7 @@ wait_for_listening_port () {
     PORT=$2
     TIMEOUT=$3
     nc -z -w$TIMEOUT $HOST $PORT
+    echo $?
 }
 
 configure_ssh_pubkey_auth () {

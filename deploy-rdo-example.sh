@@ -2,7 +2,7 @@
 set -e
 
 RDO_NAME=rdo_test_$RANDOM
-ESXI_HOST=10.7.2.2
+ESXI_HOST=10.7.2.5
 ESXI_USER=root
 
 DATASTORE=datastore1

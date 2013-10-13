@@ -55,7 +55,7 @@
                                 Hyper-V Server 2012 R2 SERVERHYPERCORE
                                 Windows Server 2012 R2 SERVERSTANDARD
                             -->
-                            <Value>Hyper-V Server 2012 R2 SERVERHYPERCORE</Value>
+                            <Value>%IMAGENAME%</Value>
                         </MetaData>
                     </InstallFrom>
                 </OSImage>
