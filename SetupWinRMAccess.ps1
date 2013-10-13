@@ -39,12 +39,11 @@ mkdir crl
 [System.IO.File]::WriteAllText("$ca_dir\index.txt", "")
 [System.IO.File]::WriteAllText("$ca_dir\serial", "01`n")
 
-$ca_conf_file="CA.cnf"
+$ca_conf_file="ca.cnf"
 $openssl_conf_file="openssl.cnf"
 $server_ext_conf_file="server_ext.cnf"
 
-# TODO: move to CBS site
-$conf_base_url="https://dl.dropboxusercontent.com/u/9060190/"
+$conf_base_url="https://raw.github.com/cloudbase/unattended-setup-scripts/master/"
 
 Invoke-WebRequest -Uri ($conf_base_url + $ca_conf_file) -OutFile "$ca_dir\$ca_conf_file"
 Invoke-WebRequest -Uri ($conf_base_url + $server_ext_conf_file) -OutFile "$ca_dir\$server_ext_conf_file"
