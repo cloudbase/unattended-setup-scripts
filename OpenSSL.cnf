@@ -1,0 +1,6 @@
+distinguished_name  = req_distinguished_name
+[req_distinguished_name]
+[v3_req]
+[v3_req_server]
+extendedKeyUsage = serverAuth
+[v3_ca]

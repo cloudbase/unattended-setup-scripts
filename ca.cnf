@@ -1,0 +1,102 @@
+[ ca ]
+default_ca = mypersonalca
+
+[ mypersonalca ]
+#
+# WARNING: if you change that, change the default_keyfile in the [req] section below too
+# Where everything is kept
+dir = C:/OpenSSL-Win32/CA
+
+# Where the issued certs are kept
+certs = $dir/certs
+
+# Where the issued crl are kept
+crl_dir = $dir/crl
+
+# database index file
+database = $dir/index.txt
+
+# default place for new certs
+new_certs_dir = $dir/certs
+
+#
+# The CA certificate
+certificate = $dir/certs/ca.pem
+
+# The current serial number
+serial = $dir/serial
+
+# The current CRL
+crl = $dir/crl/crl.pem
+
+# WARNING: if you change that, change the default_keyfile in the [req] section below too
+# The private key
+private_key = $dir/private/ca.key
+
+# private random number file
+RANDFILE = $dir/private/.rand
+
+# The extentions to add to the cert
+x509_extensions = usr_cert
+
+# how long to certify for
+default_days = 3650
+
+# how long before next CRL
+default_crl_days= 30
+
+# which md to use; people in comments indicated to use sha1 here
+default_md = sha1
+
+# keep passed DN ordering
+preserve = no
+
+# Section names
+policy = mypolicy
+x509_extensions = certificate_extensions
+
+[ mypolicy ]
+# Use the supplied information
+commonName = supplied
+stateOrProvinceName = supplied
+countryName = supplied
+emailAddress = supplied
+organizationName = supplied
+organizationalUnitName = optional
+
+[ certificate_extensions ]
+# The signed certificate cannot be used as CA
+basicConstraints = CA:false
+
+[ req ]
+# same as private_key
+default_keyfile = C:\OpenSSL-Win32\CA\private\ca.key
+
+# Which hash to use
+default_md = sha1
+
+# No prompts
+prompt = no
+
+# This is for CA
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always,issuer
+string_mask = utf8only
+basicConstraints = CA:true
+distinguished_name = root_ca_distinguished_name
+x509_extensions = root_ca_extensions
+
+[ root_ca_distinguished_name ]
+# EDIT THOSE
+commonName = WinRM CA
+stateOrProvinceName = Washington
+countryName = US
+emailAddress = notareal@email.com
+organizationName = WinRM CA
+
+[ root_ca_extensions ]
+basicConstraints = CA:true
+
+[v3_req_server]
+extendedKeyUsage = serverAuth
+
