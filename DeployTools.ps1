@@ -7,6 +7,11 @@ Invoke-WebRequest -uri "http://freefr.dl.sourceforge.net/project/sevenzip/7-Zip/
 Start-Process -Wait msiexec.exe -ArgumentList "/i $filename /qn"
 del $filename
 
+$filename="Win32OpenSSL_Light-1_0_1e.exe"
+Invoke-WebRequest -Uri "http://slproweb.com/download/$filename" -OutFile $filename
+Start-Process -Wait -FilePath $filename -ArgumentList "/silent /verysilent /sp- /suppressmsgboxes"
+del $filename
+
 $filename = "npp.6.4.5.Installer.exe"
 Invoke-WebRequest -uri "http://download.tuxfamily.org/notepadplus/6.4.5/npp.6.4.5.Installer.exe" -outFile $filename
 Start-Process -Wait -FilePath $filename -ArgumentList "/S"
