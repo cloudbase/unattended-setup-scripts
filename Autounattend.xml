@@ -190,21 +190,9 @@
                     <Description>Execute tools deployment script</Description>
                 </RunSynchronousCommand>
 
-                <!-- WinRM configuration -->
-                <RunSynchronousCommand wcm:action="add">
-                    <Order>5</Order>
-                    <Path>powershell -NoLogo -Command "Invoke-WebRequest -Uri https://raw.github.com/cloudbase/unattended-setup-scripts/master/SetupWinRMAccess.ps1 -OutFile C:\Windows\Temp\SetupWinRMAccess.ps1"</Path>
-                    <Description>Download WinRM setup script</Description>
-                </RunSynchronousCommand>
-                <RunSynchronousCommand wcm:action="add">
-                    <Order>6</Order>
-                    <Path>powershell -NoLogo -ExecutionPolicy RemoteSigned -File C:\Windows\Temp\SetupWinRMAccess.ps1</Path>
-                    <Description>Execute WinRM setup script</Description>
-                </RunSynchronousCommand>
-
                 <!-- Comment the following if you don't need VMWare tools -->
                 <RunSynchronousCommand wcm:action="add">
-                    <Order>7</Order>
+                    <Order>5</Order>
                     <Path>E:\setup64.exe /s /v "/qn REBOOT=ReallySuppress" /l C:\Windows\Temp\vmware_tools_install.log</Path>
                     <Description>Install VMWare tools</Description>
                     <WillReboot>Always</WillReboot>

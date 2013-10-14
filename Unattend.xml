@@ -17,6 +17,12 @@
         <SkipMachineOOBE>true</SkipMachineOOBE>
         <SkipUserOOBE>true</SkipUserOOBE>
       </OOBE>
+      <UserAccounts>
+          <AdministratorPassword>
+              <Value>Passw0rd</Value>
+              <PlainText>true</PlainText>
+          </AdministratorPassword>
+      </UserAccounts>
     </component>
     <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="x86" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
       <OOBE>
@@ -26,6 +32,23 @@
         <SkipMachineOOBE>true</SkipMachineOOBE>
         <SkipUserOOBE>true</SkipUserOOBE>
       </OOBE>
+    </component>
+  </settings>
+  <settings pass="specialize">
+    <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <RunSynchronous>
+          <!-- WinRM configuration -->
+          <RunSynchronousCommand wcm:action="add">
+            <Order>1</Order>
+            <Path>powershell -NoLogo -Command "Invoke-WebRequest -Uri https://raw.github.com/cloudbase/unattended-setup-scripts/master/SetupWinRMAccess.ps1 -OutFile C:\Windows\Temp\SetupWinRMAccess.ps1"</Path>
+            <Description>Download WinRM setup script</Description>
+          </RunSynchronousCommand>
+          <RunSynchronousCommand wcm:action="add">
+            <Order>2</Order>
+            <Path>powershell -NoLogo -ExecutionPolicy RemoteSigned -File C:\Windows\Temp\SetupWinRMAccess.ps1</Path>
+            <Description>Execute WinRM setup script</Description>
+          </RunSynchronousCommand>
+        </RunSynchronous>
     </component>
   </settings>
 </unattend>
