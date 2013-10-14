@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-RDO_NAME=rdo_test_$RANDOM
+RDO_NAME=rdo-test-$RANDOM
 ESXI_HOST=10.7.2.5
 ESXI_USER=root
 

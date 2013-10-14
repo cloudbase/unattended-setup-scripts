@@ -27,10 +27,10 @@ POOL_NAME=$RDO_NAME
 LINUX_GUEST_OS=rhel6-64
 HYPERV_GUEST_OS=winhyperv
 
-CONTROLLER_VM_NAME="$RDO_NAME"_controller
-NETWORK_VM_NAME="$RDO_NAME"_network
-QEMU_COMPUTE_VM_NAME="$RDO_NAME"_compute_qemu
-HYPERV_COMPUTE_VM_NAME="$RDO_NAME"_compute_hyperv
+CONTROLLER_VM_NAME="$RDO_NAME"-controller
+NETWORK_VM_NAME="$RDO_NAME"-network
+QEMU_COMPUTE_VM_NAME="$RDO_NAME"-compute-qemu
+HYPERV_COMPUTE_VM_NAME="$RDO_NAME"-compute-hyperv
 
 if [ ! -f "$LINUX_TEMPLATE_VMDK" ]; then
    echoerr "Linux template VMDK not found: $LINUX_TEMPLATE_VMDK"
