@@ -1,8 +1,10 @@
 #!/bin/bash
 set -e
 
-if [ $# -ne 9 ]; then
-    echo "Usage: $0 <esxi_user> <esxi_host> <ssh_key_file> <controller_host_name> <controller_host_ip> <network_host_name> <network_host_ip> <qemu_compute_host_name> <qemu_compute_host_ip>"
+echoerr() { echo "$@" 1>&2; }
+
+if [ $# -ne 11 ]; then
+    echo "Usage: $0 <esxi_user> <esxi_host> <ssh_key_file> <controller_host_name> <controller_host_ip> <network_host_name> <network_host_ip> <qemu_compute_host_name> <qemu_compute_host_ip> <hyperv_compute_host_name> <hyperv_compute_host_ip>"
     exit 1
 fi
 
@@ -17,17 +19,30 @@ NETWORK_VM_NAME=$6
 NETWORK_VM_IP=$7
 QEMU_COMPUTE_VM_NAME=$8
 QEMU_COMPUTE_VM_IP=$9
+HYPERV_COMPUTE_VM_NAME=${10}
+HYPERV_COMPUTE_VM_IP=${11}
 
 RDO_ADMIN=root
 RDO_ADMIN_PASSWORD=Passw0rd
 
 ANSWERS_FILE=packstack_answers.conf
+NOVA_CONF_FILE=/etc/nova/nova.conf
 
 DOMAIN=localdomain
 
 MAX_WAIT_SECONDS=600
 
 BASEDIR=$(dirname $0)
+
+echo "Checking prerequisites"
+
+NOTFOUND=0
+pip freeze | grep pywinrm > /dev/null || NOTFOUND=1
+
+if [ "$NOTFOUND" -eq 1 ]; then
+    echoerr "pywinrm not found. Install with: sudo pip install --pre pywinrm"
+    exit 1
+fi
 
 if [ ! -f "$SSH_KEY_FILE" ]; then
     ssh-keygen -q -t rsa -f $SSH_KEY_FILE -N "" -b 4096
@@ -190,8 +205,11 @@ set_test_network_config $RDO_ADMIN@$QEMU_COMPUTE_VM_IP $QEMU_COMPUTE_VM_TEST_IP/
 
 echo "Installing RDO RPMs on controller"
 
-run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "yum install -y http://rdo.fedorapeople.org/openstack/openstack-grizzly/rdo-release-grizzly.rpm || EXIT=$?"
-run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "yum install -y openstack-packstack && yum install -y openstack-utils"
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "yum install -y http://rdo.fedorapeople.org/openstack/openstack-grizzly/rdo-release-grizzly.rpm || true"
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "yum install -y openstack-packstack"
+
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "yum -y install http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm || true"
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "yum install -y crudini"
 
 echo "Generating Packstack answer file"
 
@@ -200,18 +218,18 @@ run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "packstack --gen-answer-file
 echo "Configuring Packstack answer file"
 
 run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "\
-openstack-config --set $ANSWERS_FILE general CONFIG_SSH_KEY /root/.ssh/id_rsa.pub && \
-openstack-config --set $ANSWERS_FILE general CONFIG_NTP_SERVERS 0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org,3.pool.ntp.org && \
-openstack-config --set $ANSWERS_FILE general CONFIG_CINDER_VOLUMES_SIZE 20G && \
-openstack-config --set $ANSWERS_FILE general CONFIG_NOVA_COMPUTE_HOSTS $QEMU_COMPUTE_VM_IP && \
-openstack-config --del $ANSWERS_FILE general CONFIG_NOVA_NETWORK_HOST && \
-openstack-config --set $ANSWERS_FILE general CONFIG_QUANTUM_L3_HOSTS $NETWORK_VM_IP && \
-openstack-config --set $ANSWERS_FILE general CONFIG_QUANTUM_DHCP_HOSTS $NETWORK_VM_IP && \
-openstack-config --set $ANSWERS_FILE general CONFIG_QUANTUM_METADATA_HOSTS $NETWORK_VM_IP && \
-openstack-config --set $ANSWERS_FILE general CONFIG_QUANTUM_OVS_TENANT_NETWORK_TYPE vlan && \
-openstack-config --set $ANSWERS_FILE general CONFIG_QUANTUM_OVS_VLAN_RANGES physnet1:1000:2000 && \
-openstack-config --set $ANSWERS_FILE general CONFIG_QUANTUM_OVS_BRIDGE_MAPPINGS physnet1:br-eth1 && \
-openstack-config --set $ANSWERS_FILE general CONFIG_QUANTUM_OVS_BRIDGE_IFACES br-eth1:eth1"
+crudini --set $ANSWERS_FILE general CONFIG_SSH_KEY /root/.ssh/id_rsa.pub && \
+crudini --set $ANSWERS_FILE general CONFIG_NTP_SERVERS 0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org,3.pool.ntp.org && \
+crudini --set $ANSWERS_FILE general CONFIG_CINDER_VOLUMES_SIZE 20G && \
+crudini --set $ANSWERS_FILE general CONFIG_NOVA_COMPUTE_HOSTS $QEMU_COMPUTE_VM_IP && \
+crudini --del $ANSWERS_FILE general CONFIG_NOVA_NETWORK_HOST && \
+crudini --set $ANSWERS_FILE general CONFIG_QUANTUM_L3_HOSTS $NETWORK_VM_IP && \
+crudini --set $ANSWERS_FILE general CONFIG_QUANTUM_DHCP_HOSTS $NETWORK_VM_IP && \
+crudini --set $ANSWERS_FILE general CONFIG_QUANTUM_METADATA_HOSTS $NETWORK_VM_IP && \
+crudini --set $ANSWERS_FILE general CONFIG_QUANTUM_OVS_TENANT_NETWORK_TYPE vlan && \
+crudini --set $ANSWERS_FILE general CONFIG_QUANTUM_OVS_VLAN_RANGES physnet1:1000:2000 && \
+crudini --set $ANSWERS_FILE general CONFIG_QUANTUM_OVS_BRIDGE_MAPPINGS physnet1:br-eth1 && \
+crudini --set $ANSWERS_FILE general CONFIG_QUANTUM_OVS_BRIDGE_IFACES br-eth1:eth1"
 
 echo "Deploying SSH private key on $CONTROLLER_VM_IP"
 
@@ -223,13 +241,13 @@ echo "Running Packstack"
 run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "packstack --answer-file=$ANSWERS_FILE"
 
 echo "Disabling Nova API rate limits"
-run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "openstack-config --set /etc/nova/nova.conf DEFAULT api_rate_limit False"
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "crudini --set $NOVA_CONF_FILE DEFAULT api_rate_limit False"
 
 echo "Enabling Quantum firewall driver on controller"
 run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "sed -i 's/^#\ firewall_driver/firewall_driver/g' /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini && service quantum-server restart"
 
 echo "Set libvirt_type on QEMU/KVM compute node"
-run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP "grep vmx /proc/cpuinfo > /dev/null && openstack-config --set /etc/nova/nova.conf DEFAULT libvirt_type kvm || true"
+run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP "grep vmx /proc/cpuinfo > /dev/null && crudini --set $NOVA_CONF_FILE DEFAULT libvirt_type kvm || true"
 
 echo "Applying additional OVS configuration on $NETWORK_VM_IP"
 
@@ -245,11 +263,63 @@ install_3x_kernel () {
 #install_3x_kernel $RDO_ADMIN@$NETWORK_VM_IP
 #install_3x_kernel $RDO_ADMIN@$QEMU_COMPUTE_VM_IP
 
-echo "Rebooting nodes to load the new kernel"
+echo "Rebooting Linux nodes to load the new kernel"
 
 run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP reboot
 run_ssh_cmd_with_retry $RDO_ADMIN@$NETWORK_VM_IP reboot
 run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP reboot
+
+echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
+wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
+
+echo "Configuring external virtual switch on Hyper-V"
+
+HYPERV_ADMIN=Administrator
+HYPERV_PASSWORD=$RDO_ADMIN_PASSWORD
+HYPERV_VSWITCH=external
+
+$BASEDIR/create-hyperv-external-vswitch.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_VSWITCH
+
+echo "Deploy Hyper-V OpenStack components on $HYPERV_COMPUTE_VM_IP"
+
+MSI_FILE=HyperVNovaCompute_Grizzly.msi
+
+$BASEDIR/wsmancmd.py -U https://$HYPERV_COMPUTE_VM_IP:5986/wsman -u $HYPERV_ADMIN -p $HYPERV_PASSWORD powershell Invoke-WebRequest -Uri http://www.cloudbase.it/downloads/$MSI_FILE -OutFile \$ENV:TEMP\\$MSI_FILE
+
+get_openstack_option_value () {
+
+    SSHUSER_HOST=$1
+    SECTION_NAME=$2
+    OPTION_NAME=$3
+    CONFIG_FILE_PATH=$4
+
+    run_ssh_cmd_with_retry $SSHUSER_HOST "crudini --get $CONFIG_FILE_PATH $SECTION_NAME $OPTION_NAME"
+}
+
+
+GLANCE_HOST=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_GLANCE_HOST $ANSWERS_FILE`
+QPID_HOST=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_QPID_HOST $ANSWERS_FILE`
+QUANTUM_KS_PW=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_QUANTUM_KS_PW $ANSWERS_FILE`
+
+QPID_USERNAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT qpid_username $NOVA_CONF_FILE`
+QPID_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT qpid_password $NOVA_CONF_FILE`
+
+QUANTUM_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT quantum_url $NOVA_CONF_FILE`
+QUANTUM_ADMIN_AUTH_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT quantum_admin_auth_url $NOVA_CONF_FILE`
+QUANTUM_ADMIN_TENANT_NAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT quantum_admin_tenant_name $NOVA_CONF_FILE`
+
+QUANTUM_ADMIN_USERNAME=quantum
+GLANCE_PORT=9292
+QPID_PORT=5672
+
+$BASEDIR/wsmancmd.py -U https://$HYPERV_COMPUTE_VM_IP:5986/wsman -u $HYPERV_ADMIN -p $HYPERV_PASSWORD msiexec /i %TEMP%\\$MSI_FILE /qn /l*v %TEMP%\\HyperVNovaCompute_setup_log.txt \
+ADDLOCAL=HyperVNovaCompute,QuantumHyperVAgent,iSCSISWInitiator,FreeRDP GLANCEHOST=$GLANCE_HOST GLANCEPORT=$GLANCE_PORT RPCBACKEND=ApacheQpid RPCBACKENDHOST=$QPID_HOST RPCBACKENDPORT=$QPID_PORT \
+RPCBACKENDUSER=$QPID_USERNAME RPCBACKENDPASSWORD=$QPID_PASSWORD INSTANCESPATH=C:\\OpenStack\\Instances ADDVSWITCH=0 VSWITCHNAME=$HYPERV_VSWITCH USECOWIMAGES=1 LOGDIR=C:\\OpenStack\\Log ENABLELOGGING=1 \
+VERBOSELOGGING=1 QUANTUMURL=$QUANTUM_URL QUANTUMADMINTENANTNAME=$QUANTUM_ADMIN_TENANT_NAME QUANTUMADMINUSERNAME=$QUANTUM_ADMIN_USERNAME QUANTUMADMINPASSWORD=$QUANTUM_KS_PW QUANTUMADMINAUTHURL=$QUANTUM_ADMIN_AUTH_URL
+
+echo "Renaming and rebooting Hyper-V host $HYPERV_COMPUTE_VM_IP"
+
+$BASEDIR/wsmancmd.py -U https://$HYPERV_COMPUTE_VM_IP:5986/wsman -u $HYPERV_ADMIN -p $HYPERV_PASSWORD powershell Rename-Computer $HYPERV_COMPUTE_VM_NAME -Restart
 
 echo "Wait for reboot"
 sleep 120
