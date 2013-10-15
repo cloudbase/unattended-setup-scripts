@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-echoerr() { echo "$@" 1>&2; }
-
 if [ $# -ne 11 ]; then
     echo "Usage: $0 <esxi_user> <esxi_host> <ssh_key_file> <controller_host_name> <controller_host_ip> <network_host_name> <network_host_ip> <qemu_compute_host_name> <qemu_compute_host_ip> <hyperv_compute_host_name> <hyperv_compute_host_ip>"
     exit 1
@@ -25,6 +23,9 @@ HYPERV_COMPUTE_VM_IP=${11}
 RDO_ADMIN=root
 RDO_ADMIN_PASSWORD=Passw0rd
 
+HYPERV_ADMIN=Administrator
+HYPERV_PASSWORD=$RDO_ADMIN_PASSWORD
+
 ANSWERS_FILE=packstack_answers.conf
 NOVA_CONF_FILE=/etc/nova/nova.conf
 
@@ -33,6 +34,8 @@ DOMAIN=localdomain
 MAX_WAIT_SECONDS=600
 
 BASEDIR=$(dirname $0)
+
+. $BASEDIR/utils.sh
 
 echo "Checking prerequisites"
 
@@ -49,14 +52,6 @@ if [ ! -f "$SSH_KEY_FILE" ]; then
 fi
 SSH_KEY_FILE_PUB=$SSH_KEY_FILE.pub
 
-wait_for_listening_port () {
-    HOST=$1
-    PORT=$2
-    TIMEOUT=$3
-    nc -z -w$TIMEOUT $HOST $PORT
-    echo $?
-}
-
 configure_ssh_pubkey_auth () {
     HOST=$1
     ssh-keygen -R $HOST
@@ -72,43 +67,18 @@ configure_ssh_pubkey_auth $CONTROLLER_VM_IP
 configure_ssh_pubkey_auth $NETWORK_VM_IP
 configure_ssh_pubkey_auth $QEMU_COMPUTE_VM_IP
 
-run_ssh_cmd () {
-    SSHUSER_HOST=$1
-    CMD=$2
-    ssh -i $SSH_KEY_FILE $SSHUSER_HOST -o 'PasswordAuthentication no' "$CMD"
-}
-
-run_ssh_cmd_with_retry () {
-    SSHUSER_HOST=$1
-    CMD=$2
-    INTERVAL=$3
-    MAX_RETRIES=10
-
-    COUNTER=0
-    while [ $COUNTER -lt $MAX_RETRIES ]; do
-        EXIT=0
-        run_ssh_cmd $SSHUSER_HOST "$CMD" || EXIT=$?
-        if [ $EXIT -eq 0 ]; then
-            return 0
-        fi
-        let COUNTER=COUNTER+1
-
-        if [ -n "$INTERVAL" ]; then
-            sleep $INTERVAL
-        fi
-    done
-    return $EXIT
-}
-
-update_host_date () {
-    SSHUSER_HOST=$1
-    run_ssh_cmd_with_retry $SSHUSER_HOST "ntpdate pool.ntp.org"
-}
-
 echo "Sync hosts date and time"
 update_host_date $RDO_ADMIN@$CONTROLLER_VM_IP
 update_host_date $RDO_ADMIN@$NETWORK_VM_IP
 update_host_date $RDO_ADMIN@$QEMU_COMPUTE_VM_IP
+#TODO: sync time on Hyper-V
+
+
+echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
+wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
+
+echo "Renaming and rebooting Hyper-V host $HYPERV_COMPUTE_VM_IP"
+exec_with_retry "$BASEDIR/rename-windows-host.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_COMPUTE_VM_NAME"
 
 config_openstack_network_adapter () {
     SSHUSER_HOST=$1
@@ -124,18 +94,6 @@ EOF"
     run_ssh_cmd_with_retry $SSHUSER_HOST "ifup $ADAPTER"
 }
 
-set_hostname () {
-    SSHUSER_HOST=$1
-    FQDN=$2
-    IP=$3
-    HOSTNAME=${FQDN%%.*}
-
-    run_ssh_cmd_with_retry $SSHUSER_HOST "sed -i 's/^HOSTNAME=.\+$/HOSTNAME=$FQDN/g' /etc/sysconfig/network"
-    run_ssh_cmd_with_retry $SSHUSER_HOST "sed -r '/$FQDN/d' -i /etc/hosts && echo '$IP $HOSTNAME $FQDN' >> /etc/hosts"
-    run_ssh_cmd_with_retry $SSHUSER_HOST "hostname $FQDN"
-    run_ssh_cmd_with_retry $SSHUSER_HOST "service network restart"
-}
-
 echo "Configuring networking"
 
 set_hostname $RDO_ADMIN@$CONTROLLER_VM_IP $CONTROLLER_VM_NAME.$DOMAIN $CONTROLLER_VM_IP
@@ -148,24 +106,6 @@ config_openstack_network_adapter $RDO_ADMIN@$QEMU_COMPUTE_VM_IP eth1
 set_hostname $RDO_ADMIN@$QEMU_COMPUTE_VM_IP $QEMU_COMPUTE_VM_NAME.$DOMAIN $QEMU_COMPUTE_VM_IP
 
 echo "Validating network configuration"
-
-check_interface_exists () {
-    SSHUSER_HOST=$1
-    IFACE=$2
-
-    IFACE_EXISTS=0
-    run_ssh_cmd_with_retry $SSHUSER_HOST "ifconfig $IFACE 2> /dev/null" || IFACE_EXISTS=1
-    return $IFACE_EXISTS
-}
-
-set_interface_ip () {
-    SSHUSER_HOST=$1
-    IFACE=$2
-    IFADDR=$3
-    ACTION=$4
-
-    run_ssh_cmd_with_retry $SSHUSER_HOST "ip addr $ACTION $IFADDR dev $IFACE"
-}
 
 set_test_network_config () {
     SSHUSER_HOST=$1
@@ -181,13 +121,6 @@ set_test_network_config () {
     set_interface_ip $SSHUSER_HOST $IFACE $IFADDR $ACTION
 }
 
-ping_ip () {
-    SSHUSER_HOST=$1
-    IP=$2
-
-    run_ssh_cmd_with_retry $SSHUSER_HOST "ping -c1 $IP"
-}
-
 TEST_IP_BASE=10.13.8
 NETWORK_VM_TEST_IP=$TEST_IP_BASE.1
 QEMU_COMPUTE_VM_TEST_IP=$TEST_IP_BASE.1
@@ -201,6 +134,7 @@ ping_ip $RDO_ADMIN@$QEMU_COMPUTE_VM_IP $NETWORK_VM_TEST_IP
 set_test_network_config $RDO_ADMIN@$NETWORK_VM_IP $NETWORK_VM_TEST_IP/24 del
 set_test_network_config $RDO_ADMIN@$QEMU_COMPUTE_VM_IP $QEMU_COMPUTE_VM_TEST_IP/24 del
 
+# TODO: Check networking between Hyper-V and network
 # TODO: Check external network
 
 echo "Installing RDO RPMs on controller"
@@ -263,40 +197,6 @@ install_3x_kernel () {
 #install_3x_kernel $RDO_ADMIN@$NETWORK_VM_IP
 #install_3x_kernel $RDO_ADMIN@$QEMU_COMPUTE_VM_IP
 
-echo "Rebooting Linux nodes to load the new kernel"
-
-run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP reboot
-run_ssh_cmd_with_retry $RDO_ADMIN@$NETWORK_VM_IP reboot
-run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP reboot
-
-echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
-wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
-
-echo "Configuring external virtual switch on Hyper-V"
-
-HYPERV_ADMIN=Administrator
-HYPERV_PASSWORD=$RDO_ADMIN_PASSWORD
-HYPERV_VSWITCH=external
-
-$BASEDIR/create-hyperv-external-vswitch.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_VSWITCH
-
-echo "Deploy Hyper-V OpenStack components on $HYPERV_COMPUTE_VM_IP"
-
-MSI_FILE=HyperVNovaCompute_Grizzly.msi
-
-$BASEDIR/wsmancmd.py -U https://$HYPERV_COMPUTE_VM_IP:5986/wsman -u $HYPERV_ADMIN -p $HYPERV_PASSWORD powershell Invoke-WebRequest -Uri http://www.cloudbase.it/downloads/$MSI_FILE -OutFile \$ENV:TEMP\\$MSI_FILE
-
-get_openstack_option_value () {
-
-    SSHUSER_HOST=$1
-    SECTION_NAME=$2
-    OPTION_NAME=$3
-    CONFIG_FILE_PATH=$4
-
-    run_ssh_cmd_with_retry $SSHUSER_HOST "crudini --get $CONFIG_FILE_PATH $SECTION_NAME $OPTION_NAME"
-}
-
-
 GLANCE_HOST=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_GLANCE_HOST $ANSWERS_FILE`
 QPID_HOST=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_QPID_HOST $ANSWERS_FILE`
 QUANTUM_KS_PW=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_QUANTUM_KS_PW $ANSWERS_FILE`
@@ -312,18 +212,18 @@ QUANTUM_ADMIN_USERNAME=quantum
 GLANCE_PORT=9292
 QPID_PORT=5672
 
-$BASEDIR/wsmancmd.py -U https://$HYPERV_COMPUTE_VM_IP:5986/wsman -u $HYPERV_ADMIN -p $HYPERV_PASSWORD msiexec /i %TEMP%\\$MSI_FILE /qn /l*v %TEMP%\\HyperVNovaCompute_setup_log.txt \
-ADDLOCAL=HyperVNovaCompute,QuantumHyperVAgent,iSCSISWInitiator,FreeRDP GLANCEHOST=$GLANCE_HOST GLANCEPORT=$GLANCE_PORT RPCBACKEND=ApacheQpid RPCBACKENDHOST=$QPID_HOST RPCBACKENDPORT=$QPID_PORT \
-RPCBACKENDUSER=$QPID_USERNAME RPCBACKENDPASSWORD=$QPID_PASSWORD INSTANCESPATH=C:\\OpenStack\\Instances ADDVSWITCH=0 VSWITCHNAME=$HYPERV_VSWITCH USECOWIMAGES=1 LOGDIR=C:\\OpenStack\\Log ENABLELOGGING=1 \
-VERBOSELOGGING=1 QUANTUMURL=$QUANTUM_URL QUANTUMADMINTENANTNAME=$QUANTUM_ADMIN_TENANT_NAME QUANTUMADMINUSERNAME=$QUANTUM_ADMIN_USERNAME QUANTUMADMINPASSWORD=$QUANTUM_KS_PW QUANTUMADMINAUTHURL=$QUANTUM_ADMIN_AUTH_URL
+echo "Rebooting Linux nodes to load the new kernel"
 
-echo "Renaming Hyper-V host $HYPERV_COMPUTE_VM_IP"
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP reboot
+run_ssh_cmd_with_retry $RDO_ADMIN@$NETWORK_VM_IP reboot
+run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP reboot
 
-$BASEDIR/wsmancmd.py -U https://$HYPERV_COMPUTE_VM_IP:5986/wsman -u $HYPERV_ADMIN -p $HYPERV_PASSWORD powershell Rename-Computer $HYPERV_COMPUTE_VM_NAME
+echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
+wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
 
-echo "Rebooting Hyper-V host $HYPERV_COMPUTE_VM_IP"
-
-$BASEDIR/wsmancmd.py -U https://$HYPERV_COMPUTE_VM_IP:5986/wsman -u $HYPERV_ADMIN -p $HYPERV_PASSWORD "shutdown /r /t 0"
+HYPERV_VSWITCH_NAME=external
+ 
+$BASEDIR/deploy-hyperv-compute.sh $HYPERV_COMPUTE_VM_IP $HYPERV_COMPUTE_VM_NAME $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_VSWITCH_NAME $GLANCE_HOST $QPID_HOST $QPID_USERNAME $QPID_PASSWORD $QUANTUM_URL $QUANTUM_ADMIN_AUTH_URL $QUANTUM_ADMIN_TENANT_NAME $QUANTUM_KS_PW
 
 echo "Wait for reboot"
 sleep 120
