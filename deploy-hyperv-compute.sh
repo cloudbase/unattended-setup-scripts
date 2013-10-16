@@ -1,24 +1,23 @@
 #!/bin/bash
 set -e
 
-if [ $# -ne 13 ]; then
-    echo "Usage: $0 <hyperv_host_ip> <hyperv_host_name> <hyperv_admin_username> <hyperv_password> <vswitch_name> <glance_host> <qpid_host> <qpid_username> <qpid_password> <quantum_url> <quantum_admin_auth_url> <quantum_admin_tenant_name> <quantum_admin_password>"
+if [ $# -ne 12 ]; then
+    echo "Usage: $0 <hyperv_host_ip> <hyperv_admin_username> <hyperv_password> <vswitch_name> <glance_host> <qpid_host> <qpid_username> <qpid_password> <quantum_url> <quantum_admin_auth_url> <quantum_admin_tenant_name> <quantum_admin_password>"
     exit 1
 fi
 
 HYPERV_COMPUTE_VM_IP=$1
-HYPERV_COMPUTE_VM_NAME=$2
-HYPERV_ADMIN=$3
-HYPERV_PASSWORD=$4
-HYPERV_VSWITCH=$5
-GLANCE_HOST=$6
-QPID_HOST=$7
-QPID_USERNAME=$8
-QPID_PASSWORD=$9
-QUANTUM_URL=${10}
-QUANTUM_ADMIN_AUTH_URL=${11}
-QUANTUM_ADMIN_TENANT_NAME=${12}
-QUANTUM_KS_PW=${13}
+HYPERV_ADMIN=$2
+HYPERV_PASSWORD=$3
+HYPERV_VSWITCH=$4
+GLANCE_HOST=$5
+QPID_HOST=$6
+QPID_USERNAME=$7
+QPID_PASSWORD=$8
+QUANTUM_URL=$9
+QUANTUM_ADMIN_AUTH_URL=${10}
+QUANTUM_ADMIN_TENANT_NAME=${11}
+QUANTUM_KS_PW=${12}
 
 QUANTUM_ADMIN_USERNAME=quantum
 GLANCE_PORT=9292
