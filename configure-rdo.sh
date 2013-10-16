@@ -39,16 +39,6 @@ BASEDIR=$(dirname $0)
 
 . $BASEDIR/utils.sh
 
-echo "Checking prerequisites"
-
-NOTFOUND=0
-pip freeze | grep pywinrm > /dev/null || NOTFOUND=1
-
-if [ "$NOTFOUND" -eq 1 ]; then
-    echoerr "pywinrm not found. Install with: sudo pip install --pre pywinrm"
-    exit 1
-fi
-
 if [ ! -f "$SSH_KEY_FILE" ]; then
     ssh-keygen -q -t rsa -f $SSH_KEY_FILE -N "" -b 4096
 fi
@@ -224,8 +214,9 @@ echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
 wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
 
 HYPERV_VSWITCH_NAME=external
+RPC_BACKEND=ApacheQpid
  
-$BASEDIR/deploy-hyperv-compute.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $OPENSTACK_RELEASE $HYPERV_VSWITCH_NAME $GLANCE_HOST $QPID_HOST $QPID_USERNAME $QPID_PASSWORD $QUANTUM_URL $QUANTUM_ADMIN_AUTH_URL $QUANTUM_ADMIN_TENANT_NAME $QUANTUM_KS_PW
+$BASEDIR/deploy-hyperv-compute.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $OPENSTACK_RELEASE $HYPERV_VSWITCH_NAME $GLANCE_HOST $RPC_BACKEND $QPID_HOST $QPID_USERNAME $QPID_PASSWORD $QUANTUM_URL $QUANTUM_ADMIN_AUTH_URL $QUANTUM_ADMIN_TENANT_NAME $QUANTUM_KS_PW
 
 echo "Wait for reboot"
 sleep 120
