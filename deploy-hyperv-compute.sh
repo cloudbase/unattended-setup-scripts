@@ -1,23 +1,24 @@
 #!/bin/bash
 set -e
 
-if [ $# -ne 12 ]; then
-    echo "Usage: $0 <hyperv_host_ip> <hyperv_admin_username> <hyperv_password> <vswitch_name> <glance_host> <qpid_host> <qpid_username> <qpid_password> <quantum_url> <quantum_admin_auth_url> <quantum_admin_tenant_name> <quantum_admin_password>"
+if [ $# -ne 13 ]; then
+    echo "Usage: $0 <hyperv_host_ip> <hyperv_admin_username> <hyperv_password> <openstack_release> <vswitch_name> <glance_host> <qpid_host> <qpid_username> <qpid_password> <quantum_url> <quantum_admin_auth_url> <quantum_admin_tenant_name> <quantum_admin_password>"
     exit 1
 fi
 
 HYPERV_COMPUTE_VM_IP=$1
 HYPERV_ADMIN=$2
 HYPERV_PASSWORD=$3
-HYPERV_VSWITCH=$4
-GLANCE_HOST=$5
-QPID_HOST=$6
-QPID_USERNAME=$7
-QPID_PASSWORD=$8
-QUANTUM_URL=$9
-QUANTUM_ADMIN_AUTH_URL=${10}
-QUANTUM_ADMIN_TENANT_NAME=${11}
-QUANTUM_KS_PW=${12}
+OPENSTACK_RELEASE=$4
+HYPERV_VSWITCH=$5
+GLANCE_HOST=$6
+QPID_HOST=$7
+QPID_USERNAME=$8
+QPID_PASSWORD=$9
+QUANTUM_URL=${10}
+QUANTUM_ADMIN_AUTH_URL=${11}
+QUANTUM_ADMIN_TENANT_NAME=${12}
+QUANTUM_KS_PW=${13}
 
 QUANTUM_ADMIN_USERNAME=quantum
 GLANCE_PORT=9292
@@ -27,13 +28,22 @@ BASEDIR=$(dirname $0)
 
 . $BASEDIR/utils.sh
 
+if [ "$OPENSTACK_RELEASE" == "grizzly" ]; then
+    MSI_FILE=HyperVNovaCompute_Grizzly.msi
+elif [ "$OPENSTACK_RELEASE" == "master" ]; then
+    MSI_FILE=HyperVNovaCompute_Beta.msi
+else
+    echoerr "Unsupported OpenStack release: $OPENSTACK_RELEASE"
+    exit 1
+fi
+
+echo "OpenStack release: $OPENSTACK_RELEASE"
+
 echo "Configuring external virtual switch on Hyper-V"
 
 exec_with_retry "$BASEDIR/create-hyperv-external-vswitch.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_VSWITCH"
 
 echo "Deploy Hyper-V OpenStack components on $HYPERV_COMPUTE_VM_IP"
-
-MSI_FILE=HyperVNovaCompute_Grizzly.msi
 
 run_wsmancmd_with_retry $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD "powershell -NonInteractive Invoke-WebRequest -Uri http://www.cloudbase.it/downloads/$MSI_FILE -OutFile \$ENV:TEMP\\$MSI_FILE"
 
