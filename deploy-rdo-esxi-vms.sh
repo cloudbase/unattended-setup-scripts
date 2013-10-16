@@ -74,21 +74,28 @@ $BASEDIR/delete-esxi-vm.sh "$NETWORK_VM_NAME" $DATASTORE
 $BASEDIR/delete-esxi-vm.sh "$QEMU_COMPUTE_VM_NAME" $DATASTORE
 $BASEDIR/delete-esxi-vm.sh "$HYPERV_COMPUTE_VM_NAME" $DATASTORE
 
-$BASEDIR/create-esxi-vm.sh $DATASTORE $LINUX_GUEST_OS $CONTROLLER_VM_NAME $POOL_NAME $CONTROLLER_VM_RAM 2 2 - $LINUX_TEMPLATE_VMDK - - - false false "$MGMT_NETWORK"
-$BASEDIR/create-esxi-vm.sh $DATASTORE $LINUX_GUEST_OS $NETWORK_VM_NAME $POOL_NAME $NETWORK_VM_RAM 2 2 - $LINUX_TEMPLATE_VMDK - - - false false "$MGMT_NETWORK" "$DATA_NETWORK" "$EXT_NETWORK"
-$BASEDIR/create-esxi-vm.sh $DATASTORE $LINUX_GUEST_OS $QEMU_COMPUTE_VM_NAME $POOL_NAME $QEMU_COMPUTE_VM_RAM 2 2 - $LINUX_TEMPLATE_VMDK - - - true false "$MGMT_NETWORK" "$DATA_NETWORK"
-$BASEDIR/create-esxi-vm.sh $DATASTORE $HYPERV_GUEST_OS $HYPERV_COMPUTE_VM_NAME $POOL_NAME $HYPERV_COMPUTE_VM_RAM 2 2 - $HYPERV_TEMPLATE_VMDK - - - false false "$MGMT_NETWORK" "$DATA_NETWORK" 
+$BASEDIR/create-esxi-vm.sh $DATASTORE $LINUX_GUEST_OS $CONTROLLER_VM_NAME $POOL_NAME $CONTROLLER_VM_RAM 2 2 - $LINUX_TEMPLATE_VMDK - - - false true "$MGMT_NETWORK"
+$BASEDIR/create-esxi-vm.sh $DATASTORE $LINUX_GUEST_OS $NETWORK_VM_NAME $POOL_NAME $NETWORK_VM_RAM 2 2 - $LINUX_TEMPLATE_VMDK - - - false true "$MGMT_NETWORK" "$DATA_NETWORK" "$EXT_NETWORK"
+$BASEDIR/create-esxi-vm.sh $DATASTORE $LINUX_GUEST_OS $QEMU_COMPUTE_VM_NAME $POOL_NAME $QEMU_COMPUTE_VM_RAM 2 2 - $LINUX_TEMPLATE_VMDK - - - true true "$MGMT_NETWORK" "$DATA_NETWORK"
+$BASEDIR/create-esxi-vm.sh $DATASTORE $HYPERV_GUEST_OS $HYPERV_COMPUTE_VM_NAME $POOL_NAME $HYPERV_COMPUTE_VM_RAM 2 2 - $HYPERV_TEMPLATE_VMDK - - - false true "$MGMT_NETWORK" "$DATA_NETWORK" 
 
-sleep 20
+LINUX_TEMPLATE_PARENT_FILE_HINT=`grep parentFileNameHint "$LINUX_TEMPLATE_VMDK" || true`
+HYPERV_TEMPLATE_PARENT_FILE_HINT=`grep parentFileNameHint "$HYPERV_TEMPLATE_VMDK" || true`
 
-echo "Powering on $CONTROLLER_VM_NAME"
-$BASEDIR/power-on-esxi-vm.sh "$CONTROLLER_VM_NAME" > /dev/null
-echo "Powering on $NETWORK_VM_NAME"
-$BASEDIR/power-on-esxi-vm.sh "$NETWORK_VM_NAME" > /dev/null
-echo "Powering on $QEMU_COMPUTE_VM_NAME"
-$BASEDIR/power-on-esxi-vm.sh "$QEMU_COMPUTE_VM_NAME" > /dev/null
-echo "Powering on $HYPERV_COMPUTE_VM_NAME"
-$BASEDIR/power-on-esxi-vm.sh "$HYPERV_COMPUTE_VM_NAME" > /dev/null
+if [ -n "$LINUX_TEMPLATE_PARENT_FILE_HINT" ] || [ -n "$HYPERV_TEMPLATE_PARENT_FILE_HINT" ]; then
+    # The sleep is necessary as ESXi deletes the parent file if the VM is booted straight after being created
+    # this requires additional investigation
+    sleep 20
+
+    echo "Powering on $CONTROLLER_VM_NAME"
+    $BASEDIR/power-on-esxi-vm.sh "$CONTROLLER_VM_NAME" > /dev/null
+    echo "Powering on $NETWORK_VM_NAME"
+    $BASEDIR/power-on-esxi-vm.sh "$NETWORK_VM_NAME" > /dev/null
+    echo "Powering on $QEMU_COMPUTE_VM_NAME"
+    $BASEDIR/power-on-esxi-vm.sh "$QEMU_COMPUTE_VM_NAME" > /dev/null
+    echo "Powering on $HYPERV_COMPUTE_VM_NAME"
+    $BASEDIR/power-on-esxi-vm.sh "$HYPERV_COMPUTE_VM_NAME" > /dev/null
+fi
 
 # So far so good. Get the VM ips
 
