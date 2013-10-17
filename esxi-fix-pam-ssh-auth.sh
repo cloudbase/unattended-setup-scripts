@@ -1,6 +1,6 @@
 #!/bin/sh
 
-grep '^#PAMFix' /etc/rc.local.d/local.sh
+grep '^#PAMFix' /etc/rc.local.d/local.sh > /dev/null 2>&1
 
 if [ $? != 0 ]
 then
