@@ -2,7 +2,7 @@
 set -e
 
 if [ $# -lt 3 ]; then
-    echo "Usage: $0 <esxi_user> <esxi_host> <template> [<datastore>] [<resource_pool_name>] [<vm_name>] [<ram>] [<network>]"
+    echo "Usage: $0 <esxi_user> <esxi_host> <template> [<resource_pool_name>] [<datastore>] [<vm_name>] [<ram>] [<network>]"
     exit 1
 fi
 
