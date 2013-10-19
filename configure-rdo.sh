@@ -1,24 +1,21 @@
 #!/bin/bash
 set -e
 
-if [ $# -ne 11 ]; then
-    echo "Usage: $0 <esxi_user> <esxi_host> <ssh_key_file> <controller_host_name> <controller_host_ip> <network_host_name> <network_host_ip> <qemu_compute_host_name> <qemu_compute_host_ip> <hyperv_compute_host_name> <hyperv_compute_host_ip>"
+if [ $# -ne 9 ]; then
+    echo "Usage: $0 <ssh_key_file> <controller_host_name> <controller_host_ip> <network_host_name> <network_host_ip> <qemu_compute_host_name> <qemu_compute_host_ip> <hyperv_compute_host_name> <hyperv_compute_host_ip>"
     exit 1
 fi
 
-ESXI_USER=$1
-ESXI_HOST=$2
+SSH_KEY_FILE=$1
 
-SSH_KEY_FILE=$3
-
-CONTROLLER_VM_NAME=$4
-CONTROLLER_VM_IP=$5
-NETWORK_VM_NAME=$6
-NETWORK_VM_IP=$7
-QEMU_COMPUTE_VM_NAME=$8
-QEMU_COMPUTE_VM_IP=$9
-HYPERV_COMPUTE_VM_NAME=${10}
-HYPERV_COMPUTE_VM_IP=${11}
+CONTROLLER_VM_NAME=$2
+CONTROLLER_VM_IP=$3
+NETWORK_VM_NAME=$4
+NETWORK_VM_IP=$5
+QEMU_COMPUTE_VM_NAME=$6
+QEMU_COMPUTE_VM_IP=$7
+HYPERV_COMPUTE_VM_NAME=$8
+HYPERV_COMPUTE_VM_IP=$9
 
 RDO_ADMIN=root
 RDO_ADMIN_PASSWORD=Passw0rd
