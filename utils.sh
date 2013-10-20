@@ -67,9 +67,10 @@ run_ssh_cmd_with_retry () {
 
 update_host_date () {
     SSHUSER_HOST=$1
-    run_ssh_cmd_with_retry $SSHUSER_HOST "ntpdate pool.ntp.org"
+    run_ssh_cmd_with_retry $SSHUSER_HOST "sudo ntpdate pool.ntp.org"
 }
 
+# TODO: rename to set_hostname_centos
 set_hostname () {
     SSHUSER_HOST=$1
     FQDN=$2
@@ -80,6 +81,16 @@ set_hostname () {
     run_ssh_cmd_with_retry $SSHUSER_HOST "sed -r '/$FQDN/d' -i /etc/hosts && echo '$IP $HOSTNAME $FQDN' >> /etc/hosts"
     run_ssh_cmd_with_retry $SSHUSER_HOST "hostname $FQDN"
     run_ssh_cmd_with_retry $SSHUSER_HOST "service network restart"
+}
+
+set_hostname_ubuntu () {
+    SSHUSER_HOST=$1
+    FQDN=$2
+    HOSTNAME=${FQDN%%.*}
+
+    run_ssh_cmd_with_retry $SSHUSER_HOST "sudo sed -i 's/^127.0.1.1\s*.\+$/127.0.1.1\t'"$FQDN"' '"$HOSTNAME"'/g' /etc/hosts"
+    run_ssh_cmd_with_retry $SSHUSER_HOST "sudo hostname $FQDN"
+    run_ssh_cmd_with_retry $SSHUSER_HOST "sudo sh -c \"echo $FQDN > /etc/hostname\""
 }
 
 check_interface_exists () {
@@ -117,4 +128,57 @@ get_openstack_option_value () {
     run_ssh_cmd_with_retry $SSHUSER_HOST "crudini --get $CONFIG_FILE_PATH $SECTION_NAME $OPTION_NAME"
 }
 
+configure_ssh_pubkey_auth () {
+    USERNAME=$1
+    HOST=$2
+    SSH_KEY_FILE_PUB=$3
+    PASSWORD=$4
+
+    MAX_WAIT_SECONDS=300
+
+    ssh-keygen -R $HOST
+
+    wait_for_listening_port $HOST 22 $MAX_WAIT_SECONDS
+    $BASEDIR/scppass.sh $SSH_KEY_FILE_PUB $USERNAME@$HOST:$SSH_KEY_FILE_PUB "$PASSWORD"
+    $BASEDIR/sshpass.sh $USERNAME@$HOST "$PASSWORD" "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat $SSH_KEY_FILE_PUB >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && (\[ ! -x /sbin/restorecon \] || restorecon -R -v ~/.ssh)"
+}
+
+disable_sudo_password_prompt () {
+    SSHUSER_HOST=$1
+    PWD=$2
+
+    /usr/bin/expect <<EOD
+spawn ssh -oStrictHostKeyChecking=no -oCheckHostIP=no -t $SSHUSER_HOST "sudo sh -c 'echo \"%sudo ALL=(ALL) NOPASSWD: ALL\" > /etc/sudoers.d/devstack-deploy'"
+expect "password"
+send "$PWD\n" 
+expect eof
+EOD
+}
+
+config_openstack_network_adapter_ubuntu () {
+    SSHUSER_HOST=$1
+    ADAPTER=$2
+
+    run_ssh_cmd_with_retry $SSHUSER_HOST "grep \"iface $ADAPTER\" /etc/network/interfaces ||  sudo sh -c \"cat << EOF >> /etc/network/interfaces
+
+auto $ADAPTER
+iface $ADAPTER inet manual
+up ip link set $ADAPTER up
+down ip link set $ADAPTER down
+EOF\""
+
+    run_ssh_cmd_with_retry $SSHUSER_HOST "sudo ifup $ADAPTER"
+}
+
+add_openstack_vars_to_bashrc () {
+    SSHUSER_HOST=$1
+    CONTROLLER_VM_IP=$2
+    run_ssh_cmd_with_retry $SSHUSER_HOST "cat << EOF >> ~/.bashrc
+
+export OS_USERNAME=admin
+export OS_TENANT_NAME=admin
+export OS_PASSWORD=Passw0rd
+export OS_AUTH_URL=http://$CONTROLLER_VM_IP:35357/v2.0/
+EOF"
+}
 
