@@ -1,11 +1,16 @@
 #!/bin/bash
 set -e
 
-VMDK_OPTION=$1
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <esxi_user> <esxi_host> [<use_linked_vmdks>]"
+    exit 1
+fi
+
+ESXI_USER=$1
+ESXI_HOST=$2
+VMDK_OPTION=$3
 
 RDO_NAME=rdo-test-$RANDOM
-ESXI_HOST=10.7.2.5
-ESXI_USER=root
 
 DATASTORE=datastore1
 ESXI_PUBLIC_SWITCH=vSwitch0
