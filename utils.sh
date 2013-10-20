@@ -1,14 +1,13 @@
 echoerr() { echo "$@" 1>&2; }
 
-exec_with_retry () {
-    CMD=$1
-    MAX_RETRIES=${2-10}
-    INTERVAL=$3
+exec_with_retry2 () {
+    MAX_RETRIES=$1
+    INTERVAL=$2
 
     COUNTER=0
     while [ $COUNTER -lt $MAX_RETRIES ]; do
         EXIT=0
-        eval '$CMD' || EXIT=$?
+        eval '${@:3}' || EXIT=$?
         if [ $EXIT -eq 0 ]; then
             return 0
         fi
@@ -20,6 +19,14 @@ exec_with_retry () {
     done
     return $EXIT
 }
+
+exec_with_retry () {
+    CMD=$1
+    MAX_RETRIES=${2-10}
+    INTERVAL=${3-0}
+
+    exec_with_retry2 $MAX_RETRIES $INTERVAL $CMD
+}     
 
 run_wsmancmd_with_retry () {
     HOST=$1
@@ -136,11 +143,13 @@ configure_ssh_pubkey_auth () {
 
     MAX_WAIT_SECONDS=300
 
+    PUBKEYFILE=`mktemp -u /tmp/ssh_key_pub.XXXXXX`
+
     ssh-keygen -R $HOST
 
     wait_for_listening_port $HOST 22 $MAX_WAIT_SECONDS
-    $BASEDIR/scppass.sh $SSH_KEY_FILE_PUB $USERNAME@$HOST:$SSH_KEY_FILE_PUB "$PASSWORD"
-    $BASEDIR/sshpass.sh $USERNAME@$HOST "$PASSWORD" "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat $SSH_KEY_FILE_PUB >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && (\[ ! -x /sbin/restorecon \] || restorecon -R -v ~/.ssh)"
+    exec_with_retry2 10 0 $BASEDIR/scppass.sh $SSH_KEY_FILE_PUB $USERNAME@$HOST:$PUBKEYFILE "$PASSWORD"
+    exec_with_retry2 10 0 $BASEDIR/sshpass.sh $USERNAME@$HOST "$PASSWORD" "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat $PUBKEYFILE >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && (\[ ! -x /sbin/restorecon \] || restorecon -R -v ~/.ssh)"
 }
 
 disable_sudo_password_prompt () {
@@ -148,7 +157,7 @@ disable_sudo_password_prompt () {
     SSH_KEY_FILE=$2
     PWD=$3
 
-    /usr/bin/expect <<EOD
+    exec_with_retry2 10 0 /usr/bin/expect <<EOD
 spawn ssh -oStrictHostKeyChecking=no -oCheckHostIP=no -i $SSH_KEY_FILE -t $SSHUSER_HOST "sudo sh -c 'echo \"%sudo ALL=(ALL) NOPASSWD: ALL\" >> /etc/sudoers'"
 expect "password"
 send "$PWD\n" 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 if [ $# -lt 2 ]; then
@@ -8,10 +8,10 @@ fi
 
 SSHUSER_HOST=$1
 PWD=$2
-ARGS=$3
+ARGS="${@:3}"
 
 /usr/bin/expect <<EOD
-spawn ssh -oStrictHostKeyChecking=no -oCheckHostIP=no $SSHUSER_HOST "$ARGS"
+spawn ssh -oStrictHostKeyChecking=no -oCheckHostIP=no $SSHUSER_HOST $ARGS
 expect "password"
 send "$PWD\n" 
 expect eof

@@ -83,14 +83,14 @@ run_ssh_cmd_with_retry $ADMIN_USER@$CONTROLLER_VM_IP "sudo cp crudini/crudini /u
 
 echo "Getting Nova config options for Hyper-V"
 
-RPC_BACKEND_HOST=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT rabbit_host $NOVA_CONF_FILE`
-RPC_BACKEND_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT rabbit_password $NOVA_CONF_FILE`
+RPC_BACKEND_HOST=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT rabbit_host $NOVA_CONF_FILE`
+RPC_BACKEND_PASSWORD=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT rabbit_password $NOVA_CONF_FILE`
 
-NEUTRON_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_url $NOVA_CONF_FILE`
-NEUTRON_ADMIN_AUTH_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_auth_url $NOVA_CONF_FILE`
-NEUTRON_ADMIN_TENANT_NAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_tenant_name $NOVA_CONF_FILE`
-NEUTRON_ADMIN_USERNAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_username $NOVA_CONF_FILE`
-NEUTRON_ADMIN_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_password $NOVA_CONF_FILE`
+NEUTRON_URL=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT neutron_url $NOVA_CONF_FILE`
+NEUTRON_ADMIN_AUTH_URL=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT neutron_admin_auth_url $NOVA_CONF_FILE`
+NEUTRON_ADMIN_TENANT_NAME=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT neutron_admin_tenant_name $NOVA_CONF_FILE`
+NEUTRON_ADMIN_USERNAME=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT neutron_admin_username $NOVA_CONF_FILE`
+NEUTRON_ADMIN_PASSWORD=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT neutron_admin_password $NOVA_CONF_FILE`
 
 # TODO: read Glance host/port from nova.conf
 GLANCE_HOST=$CONTROLLER_VM_IP
