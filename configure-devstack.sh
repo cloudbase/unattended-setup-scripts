@@ -29,7 +29,7 @@ echo "Configuring SSH public key authentication"
 configure_ssh_pubkey_auth $ADMIN_USER $CONTROLLER_VM_IP $SSH_KEY_FILE_PUB $ADMIN_PASSWORD
 
 echo "Disabling sudo password prompt"
-disable_sudo_password_prompt $ADMIN_USER@$CONTROLLER_VM_IP $ADMIN_PASSWORD
+disable_sudo_password_prompt $ADMIN_USER@$CONTROLLER_VM_IP $SSH_KEY_FILE $ADMIN_PASSWORD
 
 echo "Setting host name"
 set_hostname_ubuntu $ADMIN_USER@$CONTROLLER_VM_IP $CONTROLLER_VM_NAME

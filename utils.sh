@@ -145,10 +145,11 @@ configure_ssh_pubkey_auth () {
 
 disable_sudo_password_prompt () {
     SSHUSER_HOST=$1
-    PWD=$2
+    SSH_KEY_FILE=$2
+    PWD=$3
 
     /usr/bin/expect <<EOD
-spawn ssh -oStrictHostKeyChecking=no -oCheckHostIP=no -t $SSHUSER_HOST "sudo sh -c 'echo \"%sudo ALL=(ALL) NOPASSWD: ALL\" > /etc/sudoers.d/devstack-deploy'"
+spawn ssh -oStrictHostKeyChecking=no -oCheckHostIP=no -i $SSH_KEY_FILE -t $SSHUSER_HOST "sudo sh -c 'echo \"%sudo ALL=(ALL) NOPASSWD: ALL\" >> /etc/sudoers'"
 expect "password"
 send "$PWD\n" 
 expect eof
