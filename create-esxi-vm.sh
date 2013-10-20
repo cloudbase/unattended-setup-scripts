@@ -44,6 +44,16 @@ if [ "$POOL_NAME" != "-" ]; then
     fi
 fi
 
+if [ "$ISO_PATH" != "-" ] && [ ! -f "$ISO_PATH" ]; then
+    echo "ISO file $ISO_PATH not found"
+    exit 1
+fi
+
+if [ "$FLOPPY_TEMPLATE_PATH" != "-" ] && [ ! -f "$FLOPPY_TEMPLATE_PATH" ]; then
+    echo "Floppy image file $FLOPPY_TEMPLATE_PATH not found"
+    exit 1
+fi
+
 mkdir -p $BASE_DIR
 
 if [ "$VMDK_TEMPLATE_PATH" == "-" ]; then
