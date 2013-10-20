@@ -40,7 +40,7 @@ echo "Setting controller host name"
 set_hostname_ubuntu $ADMIN_USER@$CONTROLLER_VM_IP $CONTROLLER_VM_NAME
 
 echo "Renaming and rebooting Hyper-V host $HYPERV_COMPUTE_VM_IP"
-exec_with_retry "$BASEDIR/rename-windows-host.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_COMPUTE_VM_NAME"
+exec_with_retry "$BASEDIR/rename-windows-host.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_COMPUTE_VM_NAME" 30 30
 
 echo "Configure networking"
 config_openstack_network_adapter_ubuntu $ADMIN_USER@$CONTROLLER_VM_IP eth1 
@@ -84,6 +84,11 @@ run_ssh_cmd_with_retry $ADMIN_USER@$CONTROLLER_VM_IP "sudo cp crudini/crudini /u
 echo "Getting Nova config options for Hyper-V"
 
 RPC_BACKEND_HOST=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT rabbit_host $NOVA_CONF_FILE`
+
+if [ "$RPC_BACKEND_HOST" == "localhost" ]; then
+    RPC_BACKEND_HOST=$CONTROLLER_VM_IP
+fi
+
 RPC_BACKEND_PASSWORD=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT rabbit_password $NOVA_CONF_FILE`
 
 NEUTRON_URL=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT neutron_url $NOVA_CONF_FILE`
@@ -99,6 +104,7 @@ RPC_BACKEND_USERNAME=guest
 RPC_BACKEND_PORT=5672
 HYPERV_VSWITCH_NAME=external
 RPC_BACKEND=RabbitMQ
+OPENSTACK_RELEASE=master
 
 echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
 wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
@@ -106,6 +112,6 @@ wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
 $BASEDIR/deploy-hyperv-compute.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $OPENSTACK_RELEASE $HYPERV_VSWITCH_NAME $GLANCE_HOST $RPC_BACKEND $RPC_BACKEND_HOST $RPC_BACKEND_USERNAME $RPC_BACKEND_PASSWORD $NEUTRON_URL $NEUTRON_ADMIN_AUTH_URL $NEUTRON_ADMIN_TENANT_NAME $NEUTRON_ADMIN_USERNAME $NEUTRON_ADMIN_PASSWORD
 
 echo "DevStack configured!"
-echo "Controller IP: $CONTROLLER_VM_IP"
-echo "SSH key file: $SSH_KEY_FILE"
+echo "SSH access:"
+echo "ssh -i $SSH_KEY_FILE $ADMIN_USER@$CONTROLLER_VM_IP"
 
