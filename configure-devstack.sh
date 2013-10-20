@@ -16,6 +16,11 @@ HYPERV_COMPUTE_VM_IP=$5
 ADMIN_USER=ubuntu
 ADMIN_PASSWORD=Passw0rd
 
+HYPERV_ADMIN=Administrator
+HYPERV_PASSWORD=$ADMIN_PASSWORD
+
+NOVA_CONF_FILE=/etc/nova/nova.conf
+
 BASEDIR=$(dirname $0)
 
 . $BASEDIR/utils.sh
@@ -31,9 +36,11 @@ configure_ssh_pubkey_auth $ADMIN_USER $CONTROLLER_VM_IP $SSH_KEY_FILE_PUB $ADMIN
 echo "Disabling sudo password prompt"
 disable_sudo_password_prompt $ADMIN_USER@$CONTROLLER_VM_IP $SSH_KEY_FILE $ADMIN_PASSWORD
 
-echo "Setting host name"
+echo "Setting controller host name"
 set_hostname_ubuntu $ADMIN_USER@$CONTROLLER_VM_IP $CONTROLLER_VM_NAME
-# TODO: set Windows host name
+
+echo "Renaming and rebooting Hyper-V host $HYPERV_COMPUTE_VM_IP"
+exec_with_retry "$BASEDIR/rename-windows-host.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_COMPUTE_VM_NAME"
 
 echo "Configure networking"
 config_openstack_network_adapter_ubuntu $ADMIN_USER@$CONTROLLER_VM_IP eth1 
@@ -67,6 +74,36 @@ run_ssh_cmd_with_retry $ADMIN_USER@$CONTROLLER_VM_IP "sudo ovs-vsctl show | grep
 
 echo "Adding OpenStack vars to .bashrc"
 add_openstack_vars_to_bashrc $ADMIN_USER@$CONTROLLER_VM_IP $CONTROLLER_VM_IP
+
+echo "Install crudini on controller"
+
+run_ssh_cmd_with_retry $ADMIN_USER@$CONTROLLER_VM_IP "git clone https://github.com/pixelb/crudini.git"
+run_ssh_cmd_with_retry $ADMIN_USER@$CONTROLLER_VM_IP "sudo apt-get install -y python-iniparse"
+run_ssh_cmd_with_retry $ADMIN_USER@$CONTROLLER_VM_IP "sudo cp crudini/crudini /usr/local/bin"
+
+echo "Getting Nova config options for Hyper-V"
+
+RPC_BACKEND_HOST=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT rabbit_host $NOVA_CONF_FILE`
+RPC_BACKEND_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT rabbit_password $NOVA_CONF_FILE`
+
+NEUTRON_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_url $NOVA_CONF_FILE`
+NEUTRON_ADMIN_AUTH_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_auth_url $NOVA_CONF_FILE`
+NEUTRON_ADMIN_TENANT_NAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_tenant_name $NOVA_CONF_FILE`
+NEUTRON_ADMIN_USERNAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_username $NOVA_CONF_FILE`
+NEUTRON_ADMIN_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_password $NOVA_CONF_FILE`
+
+# TODO: read Glance host/port from nova.conf
+GLANCE_HOST=$CONTROLLER_VM_IP
+GLANCE_PORT=9292
+RPC_BACKEND_USERNAME=guest 
+RPC_BACKEND_PORT=5672
+HYPERV_VSWITCH_NAME=external
+RPC_BACKEND=RabbitMQ
+
+echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
+wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
+
+$BASEDIR/deploy-hyperv-compute.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $OPENSTACK_RELEASE $HYPERV_VSWITCH_NAME $GLANCE_HOST $RPC_BACKEND $RPC_BACKEND_HOST $RPC_BACKEND_USERNAME $RPC_BACKEND_PASSWORD $NEUTRON_URL $NEUTRON_ADMIN_AUTH_URL $NEUTRON_ADMIN_TENANT_NAME $NEUTRON_ADMIN_USERNAME $NEUTRON_ADMIN_PASSWORD
 
 echo "DevStack configured!"
 echo "Controller IP: $CONTROLLER_VM_IP"
