@@ -19,5 +19,5 @@ if [ "$NOTFOUND" -eq 1 ]; then
     exit 1
 fi
 
-timeout 60 $BASEDIR/wsmancmd.py -U https://$HOST:5986/wsman -u $USERNAME -p $PASSWORD 'powershell -NonInteractive -Command "if ([System.Net.Dns]::GetHostName() -ne \"'$NEW_HOST_NAME'\") { Rename-Computer \"'$NEW_HOST_NAME'\" -Restart -Force }"'
+$BASEDIR/wsmancmd.py -U https://$HOST:5986/wsman -u $USERNAME -p $PASSWORD 'powershell -NonInteractive -Command "if ([System.Net.Dns]::GetHostName() -ne \"'$NEW_HOST_NAME'\") { Rename-Computer \"'$NEW_HOST_NAME'\" -Restart -Force }"'
 

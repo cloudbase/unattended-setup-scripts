@@ -47,7 +47,7 @@ wait_for_listening_port () {
 run_ssh_cmd () {
     SSHUSER_HOST=$1
     CMD=$2
-    ssh -i $SSH_KEY_FILE $SSHUSER_HOST -o 'PasswordAuthentication no' "$CMD"
+    ssh -t -i $SSH_KEY_FILE $SSHUSER_HOST -o 'PasswordAuthentication no' "$CMD"
 }
 
 run_ssh_cmd_with_retry () {
