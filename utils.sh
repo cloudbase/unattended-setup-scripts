@@ -133,7 +133,8 @@ get_openstack_option_value () {
     CONFIG_FILE_PATH=$4
 
     # Return an empty result if the value is not found
-    run_ssh_cmd_with_retry $SSHUSER_HOST "crudini --get $CONFIG_FILE_PATH $SECTION_NAME $OPTION_NAME 2> /dev/null || if [ \"\$?\" == \"1\" ]; then true; else false; fi"
+    # TODO: improve the hack that removes the trailing '\r\n'
+    run_ssh_cmd_with_retry $SSHUSER_HOST "crudini --get $CONFIG_FILE_PATH $SECTION_NAME $OPTION_NAME 2> /dev/null || if [ \"\$?\" == \"1\" ]; then true; else false; fi" | tr -d '\r'
 }
 
 configure_ssh_pubkey_auth () {
