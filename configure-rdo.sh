@@ -272,6 +272,6 @@ else
 fi
 
 echo "RDO installed!"
-echo "Controller IP: $CONTROLLER_VM_IP"
-echo "SSH key file: $SSH_KEY_FILE"
+echo "SSH access:"
+echo "ssh -i $SSH_KEY_FILE $RDO_ADMIN@$CONTROLLER_VM_IP"
 
