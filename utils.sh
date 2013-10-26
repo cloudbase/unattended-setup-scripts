@@ -26,7 +26,7 @@ exec_with_retry () {
     INTERVAL=${3-0}
 
     exec_with_retry2 $MAX_RETRIES $INTERVAL $CMD
-}     
+}
 
 run_wsmancmd_with_retry () {
     HOST=$1
@@ -132,7 +132,8 @@ get_openstack_option_value () {
     OPTION_NAME=$3
     CONFIG_FILE_PATH=$4
 
-    run_ssh_cmd_with_retry $SSHUSER_HOST "crudini --get $CONFIG_FILE_PATH $SECTION_NAME $OPTION_NAME"
+    # Return an empty result if the value is not found
+    run_ssh_cmd_with_retry $SSHUSER_HOST "crudini --get $CONFIG_FILE_PATH $SECTION_NAME $OPTION_NAME 2> /dev/null || if [ \"\$?\" == \"1\" ]; then true; else false; fi"
 }
 
 configure_ssh_pubkey_auth () {
@@ -160,7 +161,7 @@ disable_sudo_password_prompt () {
     exec_with_retry2 10 0 /usr/bin/expect <<EOD
 spawn ssh -oStrictHostKeyChecking=no -oCheckHostIP=no -i $SSH_KEY_FILE -t $SSHUSER_HOST "sudo sh -c 'echo \"%sudo ALL=(ALL) NOPASSWD: ALL\" >> /etc/sudoers'"
 expect "password"
-send "$PWD\n" 
+send "$PWD\n"
 expect eof
 EOD
 }

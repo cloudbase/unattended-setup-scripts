@@ -20,6 +20,7 @@ HYPERV_ADMIN=Administrator
 HYPERV_PASSWORD=$ADMIN_PASSWORD
 
 NOVA_CONF_FILE=/etc/nova/nova.conf
+CEILOMETER_CONF_FILE=/etc/ceilometer/ceilometer.conf
 
 BASEDIR=$(dirname $0)
 
@@ -43,7 +44,7 @@ echo "Renaming and rebooting Hyper-V host $HYPERV_COMPUTE_VM_IP"
 exec_with_retry "$BASEDIR/rename-windows-host.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_COMPUTE_VM_NAME" 30 30
 
 echo "Configure networking"
-config_openstack_network_adapter_ubuntu $ADMIN_USER@$CONTROLLER_VM_IP eth1 
+config_openstack_network_adapter_ubuntu $ADMIN_USER@$CONTROLLER_VM_IP eth1
 config_openstack_network_adapter_ubuntu $ADMIN_USER@$CONTROLLER_VM_IP eth2
 
 echo "Sync hosts date and time"
@@ -51,7 +52,7 @@ update_host_date $ADMIN_USER@$CONTROLLER_VM_IP
 # TODO: Sync Windows date and time
 
 echo "Installing git"
-run_ssh_cmd_with_retry $ADMIN_USER@$CONTROLLER_VM_IP "sudo apt-get install -y git" 
+run_ssh_cmd_with_retry $ADMIN_USER@$CONTROLLER_VM_IP "sudo apt-get install -y git"
 
 echo "Unstack if DevStack is already running"
 run_ssh_cmd_with_retry $ADMIN_USER@$CONTROLLER_VM_IP "[ ! -d devstack ] || (cd devstack && ./unstack.sh)"
@@ -97,10 +98,26 @@ NEUTRON_ADMIN_TENANT_NAME=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM
 NEUTRON_ADMIN_USERNAME=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT neutron_admin_username $NOVA_CONF_FILE`
 NEUTRON_ADMIN_PASSWORD=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT neutron_admin_password $NOVA_CONF_FILE`
 
+CEILOMETER=`run_ssh_cmd_with_retry $ADMIN_USER@$CONTROLLER_VM_IP "if [ -f \"$CEILOMETER_CONF_FILE\" ]; then echo 1; fi"`
+
+if [ -n "$CEILOMETER" ]; then
+    echo "Getting Ceilometer config options for Hyper-V"
+
+    CEILOMETER_ADMIN_AUTH_URL=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT os_auth_url $CEILOMETER_CONF_FILE`
+    CEILOMETER_ADMIN_TENANT_NAME=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT os_tenant_name $CEILOMETER_CONF_FILE`
+    CEILOMETER_ADMIN_USERNAME=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT os_username $CEILOMETER_CONF_FILE`
+    CEILOMETER_ADMIN_PASSWORD=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT os_password $CEILOMETER_CONF_FILE`
+    CEILOMETER_METERING_SECRET=`get_openstack_option_value $ADMIN_USER@$CONTROLLER_VM_IP DEFAULT metering_secret $CEILOMETER_CONF_FILE`
+
+    if [ -z "$CEILOMETER_ADMIN_AUTH_URL" ]; then
+        CEILOMETER_ADMIN_AUTH_URL=$NEUTRON_ADMIN_AUTH_URL
+    fi
+fi
+
 # TODO: read Glance host/port from nova.conf
 GLANCE_HOST=$CONTROLLER_VM_IP
 GLANCE_PORT=9292
-RPC_BACKEND_USERNAME=guest 
+RPC_BACKEND_USERNAME=guest
 RPC_BACKEND_PORT=5672
 HYPERV_VSWITCH_NAME=external
 RPC_BACKEND=RabbitMQ
@@ -109,9 +126,13 @@ OPENSTACK_RELEASE=master
 echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
 wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
 
-$BASEDIR/deploy-hyperv-compute.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $OPENSTACK_RELEASE $HYPERV_VSWITCH_NAME $GLANCE_HOST $RPC_BACKEND $RPC_BACKEND_HOST $RPC_BACKEND_USERNAME $RPC_BACKEND_PASSWORD $NEUTRON_URL $NEUTRON_ADMIN_AUTH_URL $NEUTRON_ADMIN_TENANT_NAME $NEUTRON_ADMIN_USERNAME $NEUTRON_ADMIN_PASSWORD
+$BASEDIR/deploy-hyperv-compute.sh "$HYPERV_COMPUTE_VM_IP" "$HYPERV_ADMIN" "$HYPERV_PASSWORD" \
+"$OPENSTACK_RELEASE" "$HYPERV_VSWITCH_NAME" "$GLANCE_HOST" "$RPC_BACKEND" "$RPC_BACKEND_HOST" \
+"$RPC_BACKEND_USERNAME" "$RPC_BACKEND_PASSWORD" "$NEUTRON_URL" "$NEUTRON_ADMIN_AUTH_URL" \
+"$NEUTRON_ADMIN_TENANT_NAME" "$NEUTRON_ADMIN_USERNAME" "$NEUTRON_ADMIN_PASSWORD" \
+"$CEILOMETER_ADMIN_AUTH_URL" "$CEILOMETER_ADMIN_TENANT_NAME" "$CEILOMETER_ADMIN_USERNAME" \
+"$CEILOMETER_ADMIN_PASSWORD" "$CEILOMETER_METERING_SECRET"
 
 echo "DevStack configured!"
 echo "SSH access:"
 echo "ssh -i $SSH_KEY_FILE $ADMIN_USER@$CONTROLLER_VM_IP"
-

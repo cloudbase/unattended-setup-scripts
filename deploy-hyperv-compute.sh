@@ -3,10 +3,10 @@ set -e
 
 if [ $# -ne 20 ]; then
     echo "Usage: $0 <hyperv_host_ip> <hyperv_admin_username> <hyperv_password> <openstack_release> <vswitch_name> <glance_host> \
- <rpc_backend> <rpc_backend_host> <rpc_backend_username> <rpc_backend_password> <quantum_url> \
- <quantum_admin_auth_url> <quantum_admin_tenant_name> <quantum_admin_username> <quantum_admin_password> \
- <ceilometer_admin_auth_url> <ceilometer_admin_tenant_name> <ceilometer_admin_username> <ceilometer_admin_password> \
- <ceilometer_metering_secret>"
+<rpc_backend> <rpc_backend_host> <rpc_backend_username> <rpc_backend_password> <quantum_url> \
+<quantum_admin_auth_url> <quantum_admin_tenant_name> <quantum_admin_username> <quantum_admin_password> \
+<ceilometer_admin_auth_url> <ceilometer_admin_tenant_name> <ceilometer_admin_username> <ceilometer_admin_password> \
+<ceilometer_metering_secret>"
     exit 1
 fi
 
