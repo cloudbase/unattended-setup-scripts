@@ -15,8 +15,13 @@ else
     if($InstallCloudbaseInit)
     {
         Invoke-WebRequest -Uri http://www.cloudbase.it/downloads/CloudbaseInitSetup_Beta.msi -OutFile C:\Windows\Temp\CloudbaseInitSetup_Beta.msi
+        Write-Host "Sleep 60 seconds"
+        Start-Sleep -s 60
+        Write-Host "Install Cloudbase-Init"
         Start-Process -FilePath msiexec -ArgumentList "/i C:\Windows\Temp\CloudbaseInitSetup.msi /qn /l*v C:\Windows\Temp\CloudbaseInitSetup_Beta.log" -Wait
-        Start-Process -FilePath msiexec -ArgumentList "/i C:\Windows\Temp\CloudbaseInitSetup.msi /qn /l*v C:\Windows\Temp\CloudbaseInitSetup_Beta1.log" -Wait
+        Write-Host "Sleep 60 seconds take 2"
+        Start-Sleep -s 60
+        Write-Host "Install Cloudbase-Init take 2"
         Start-Process -FilePath msiexec -ArgumentList "/i C:\Windows\Temp\CloudbaseInitSetup.msi /qn /l*v C:\Windows\Temp\CloudbaseInitSetup_Beta2.log" -Wait
         C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:C:\Program\ Files\ (x86)\Cloudbase\ Solutions\Cloudbase-Init\conf\Unattend.xml
     }
