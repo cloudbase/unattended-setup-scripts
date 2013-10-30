@@ -16,10 +16,21 @@ ESXI_PUBLIC_VNIC=$7
 LINUX_TEMPLATE_VMDK=$8
 HYPERV_TEMPLATE_VMDK=$9
 
+BASEDIR=$(dirname $0)
+
+. $BASEDIR/utils.sh
+
+case "$OPENSTACK_RELEASE" in
+grizzly|havana)
+    ;;
+*)
+    echoerr "Unsupported OpenStack release: $OPENSTACK_RELEASE"
+    exit 1
+    ;;
+esac
+
 ESXI_BASEDIR=/vmfs/volumes/datastore1/unattended-scripts
 RDO_VM_IPS_FILE=`mktemp -u /tmp/rdo_ips.XXXXXX`
-
-BASEDIR=$(dirname $0)
 
 ssh $ESXI_USER@$ESXI_HOST $ESXI_BASEDIR/deploy-rdo-esxi-vms.sh $DATASTORE $RDO_NAME $ESXI_PUBLIC_SWITCH $ESXI_PUBLIC_VNIC "$LINUX_TEMPLATE_VMDK" "$HYPERV_TEMPLATE_VMDK" $RDO_VM_IPS_FILE
 read CONTROLLER_VM_NAME CONTROLLER_VM_IP NETWORK_VM_NAME NETWORK_VM_IP QEMU_COMPUTE_VM_NAME QEMU_COMPUTE_VM_IP HYPERV_COMPUTE_VM_NAME HYPERV_COMPUTE_VM_IP <<< `ssh $ESXI_USER@$ESXI_HOST "cat $RDO_VM_IPS_FILE" | perl -n -e'/^(.+)\:(.+)$/ && print "$1\n$2\n"'`
