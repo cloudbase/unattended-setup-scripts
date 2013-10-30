@@ -20,4 +20,7 @@ rmdir $TMP1
 cd vmware-tools-distrib/
 ./vmware-install.pl --default
 rm -rf $TMP2
+sed -i 's/answer AUTO_KMODS_ENABLED no/answer AUTO_KMODS_ENABLED yes/g' /etc/vmware-tools/locations
+sed -i 's/answer AUTO_KMODS_ENABLED_ANSWER no/answer AUTO_KMODS_ENABLED_ANSWER yes/g' /etc/vmware-tools/locations
+/usr/bin/vmware-config-tools.pl --default
 
