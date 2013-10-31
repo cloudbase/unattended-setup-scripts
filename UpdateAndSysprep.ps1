@@ -8,8 +8,7 @@ $Host.UI.RawUI.WindowTitle = "Installing updates..."
 Get-WUInstall -AcceptAll -IgnoreReboot
 if (Get-WURebootStatus -Silent)
 {
-    $Host.UI.RawUI.WindowTitle = "Updates installed. Rebooting."
-  
+    $Host.UI.RawUI.WindowTitle = "Updates installation finished. Rebooting."
     shutdown /r /t 0
 }
 else
@@ -19,11 +18,9 @@ else
     if($InstallCloudbaseInit)
     {
         $Host.UI.RawUI.WindowTitle = "Downloading Cloudbase-Init..."
-      
         Invoke-WebRequest -Uri http://www.cloudbase.it/downloads/CloudbaseInitSetup_Beta.msi -OutFile C:\Windows\Temp\CloudbaseInitSetup_Beta.msi
         
         $Host.UI.RawUI.WindowTitle = "Installing Cloudbase-Init..."
-                
         do 
         {
             $p = Start-Process -Wait -PassThru -FilePath msiexec -ArgumentList "/i C:\Windows\Temp\CloudbaseInitSetup.msi /qn /l*v C:\Windows\Temp\CloudbaseInitSetup_Beta.log"
@@ -35,10 +32,12 @@ else
         }
         while($p.ExitCode -ne 0)
         
+        $Host.UI.RawUI.WindowTitle = "Running Sysprep..."
         C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:C:\Program\ Files\ (x86)\Cloudbase\ Solutions\Cloudbase-Init\conf\Unattend.xml
     }
     else
     {
+        $Host.UI.RawUI.WindowTitle = "Running Sysprep..."      
         C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:C:\Windows\Temp\Unattend.xml
     }
 }
