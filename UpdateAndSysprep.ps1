@@ -17,23 +17,9 @@ else
     Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name AutoLogonCount
     if($InstallCloudbaseInit)
     {
-        $Host.UI.RawUI.WindowTitle = "Downloading Cloudbase-Init..."
-        Invoke-WebRequest -Uri http://www.cloudbase.it/downloads/CloudbaseInitSetup_Beta.msi -OutFile C:\Windows\Temp\CloudbaseInitSetup_Beta.msi
-        
-        $Host.UI.RawUI.WindowTitle = "Installing Cloudbase-Init..."
-        net start msiserver
-        
-        do 
-        {
-            $p = Start-Process -Wait -PassThru -FilePath msiexec -ArgumentList "/i C:\Windows\Temp\CloudbaseInitSetup.msi /qn /l*v C:\Windows\Temp\CloudbaseInitSetup_Beta.log"
-            if ($p.ExitCode -ne 0)
-            {
-                Write-Host "Cloudbase-Init setup failed. Retrying after a short break."
-                Start-Sleep -s 30
-            }
-        }
-        while($p.ExitCode -ne 0)
-        
+        Invoke-WebRequest -Uri https://dl.dropboxusercontent.com/u/9060190/InstallCloudbaseInit.ps1 -OutFile C:\Windows\Temp\InstallCloudbaseInit.ps1
+        C:\Windows\Temp\InstallCloudbaseInit.ps1
+
         #$Host.UI.RawUI.WindowTitle = "Running Sysprep..."
         #C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:"C:\Program\ Files\ (x86)\Cloudbase\ Solutions\Cloudbase-Init\conf\Unattend.xml"
     }
