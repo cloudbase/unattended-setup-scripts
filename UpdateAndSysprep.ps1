@@ -23,7 +23,7 @@ else
         $Host.UI.RawUI.WindowTitle = "Installing Cloudbase-Init..."
         do 
         {
-            cmd /c start /wait msiexec /i C:\Windows\Temp\CloudbaseInitSetup.msi /qn /l*v C:\Windows\Temp\CloudbaseInitSetup_Beta.log
+            cmd /c start /wait msiexec /i C:\Windows\Temp\CloudbaseInitSetup.msi /l*v C:\Windows\Temp\CloudbaseInitSetup_Beta.log
             $success = $?
 
             if (!$success)
@@ -34,8 +34,8 @@ else
         }
         while(!$success)
         
-        $Host.UI.RawUI.WindowTitle = "Running Sysprep..."
-        C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:C:\Program\ Files\ (x86)\Cloudbase\ Solutions\Cloudbase-Init\conf\Unattend.xml
+        #$Host.UI.RawUI.WindowTitle = "Running Sysprep..."
+        #C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:"C:\Program\ Files\ (x86)\Cloudbase\ Solutions\Cloudbase-Init\conf\Unattend.xml"
     }
     else
     {
