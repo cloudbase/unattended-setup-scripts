@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-if [ $# -ne 10 ]; then
+if [ $# -ne 8 ]; then
     echo "Usage: $0 <openstack_release> <ssh_key_file> <controller_host_name> <controller_host_ip> <network_host_name> <network_host_ip> <qemu_compute_host_name> <qemu_compute_host_ip> <hyperv_compute_host_name> <hyperv_compute_host_ip>"
     exit 1
 fi
@@ -54,12 +54,13 @@ update_host_date $RDO_ADMIN@$NETWORK_VM_IP
 update_host_date $RDO_ADMIN@$QEMU_COMPUTE_VM_IP
 #TODO: sync time on Hyper-V
 
+if [ -n "$HYPERV_COMPUTE_VM_IP" ]; then
+    echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
+    wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
 
-echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
-wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
-
-echo "Renaming and rebooting Hyper-V host $HYPERV_COMPUTE_VM_IP"
-exec_with_retry "$BASEDIR/rename-windows-host.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_COMPUTE_VM_NAME" 30 30
+    echo "Renaming and rebooting Hyper-V host $HYPERV_COMPUTE_VM_IP"
+    exec_with_retry "$BASEDIR/rename-windows-host.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_COMPUTE_VM_NAME" 30 30
+fi
 
 config_openstack_network_adapter () {
     SSHUSER_HOST=$1
@@ -168,6 +169,19 @@ echo "Running Packstack"
 
 run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "packstack --answer-file=$ANSWERS_FILE"
 
+echo "Additional firewall rules"
+
+# See https://github.com/stackforge/packstack/commit/ca46227119fd6a6e5b0f1ef19e8967d92a3b1f6c
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "iptables -I INPUT -s $QEMU_COMPUTE_VM_IP/32 -p tcp --dport 9696 -j ACCEPT"
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "iptables -I INPUT -s $NETWORK_VM_IP/32 -p tcp --dport 9696 -j ACCEPT"
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "iptables -I INPUT -s $NETWORK_VM_IP/32 -p tcp --dport 35357 -j ACCEPT"
+
+if [ -n "$HYPERV_COMPUTE_VM_IP" ]; then
+    run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "iptables -I INPUT -s $HYPERV_COMPUTE_VM_IP/32 -p tcp --dport 9696 -j ACCEPT"
+fi
+
+run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "service iptables save"
+
 echo "Disabling Nova API rate limits"
 run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "crudini --set $NOVA_CONF_FILE DEFAULT api_rate_limit False"
 
@@ -196,35 +210,37 @@ install_3x_kernel () {
 #install_3x_kernel $RDO_ADMIN@$NETWORK_VM_IP
 #install_3x_kernel $RDO_ADMIN@$QEMU_COMPUTE_VM_IP
 
-GLANCE_HOST=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_GLANCE_HOST $ANSWERS_FILE`
-QPID_HOST=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_QPID_HOST $ANSWERS_FILE`
-QPID_USERNAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT qpid_username $NOVA_CONF_FILE`
-QPID_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT qpid_password $NOVA_CONF_FILE`
+if [ -n "$HYPERV_COMPUTE_VM_IP" ]; then
+    GLANCE_HOST=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_GLANCE_HOST $ANSWERS_FILE`
+    QPID_HOST=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_QPID_HOST $ANSWERS_FILE`
+    QPID_USERNAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT qpid_username $NOVA_CONF_FILE`
+    QPID_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT qpid_password $NOVA_CONF_FILE`
 
-if [ "$OPENSTACK_RELEASE" == "grizzly" ]; then
-    NEUTRON_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT quantum_url $NOVA_CONF_FILE`
-    NEUTRON_ADMIN_AUTH_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT quantum_admin_auth_url $NOVA_CONF_FILE`
-    NEUTRON_ADMIN_TENANT_NAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT quantum_admin_tenant_name $NOVA_CONF_FILE`
-    NEUTRON_ADMIN_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_QUANTUM_KS_PW $ANSWERS_FILE`
+    if [ "$OPENSTACK_RELEASE" == "grizzly" ]; then
+        NEUTRON_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT quantum_url $NOVA_CONF_FILE`
+        NEUTRON_ADMIN_AUTH_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT quantum_admin_auth_url $NOVA_CONF_FILE`
+        NEUTRON_ADMIN_TENANT_NAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT quantum_admin_tenant_name $NOVA_CONF_FILE`
+        NEUTRON_ADMIN_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_QUANTUM_KS_PW $ANSWERS_FILE`
 
-    NEUTRON_ADMIN_USERNAME=quantum
-else
-    NEUTRON_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_url $NOVA_CONF_FILE`
-    NEUTRON_ADMIN_AUTH_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_auth_url $NOVA_CONF_FILE`
-    NEUTRON_ADMIN_TENANT_NAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_tenant_name $NOVA_CONF_FILE`
-    NEUTRON_ADMIN_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_NEUTRON_KS_PW $ANSWERS_FILE`
+        NEUTRON_ADMIN_USERNAME=quantum
+    else
+        NEUTRON_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_url $NOVA_CONF_FILE`
+        NEUTRON_ADMIN_AUTH_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_auth_url $NOVA_CONF_FILE`
+        NEUTRON_ADMIN_TENANT_NAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT neutron_admin_tenant_name $NOVA_CONF_FILE`
+        NEUTRON_ADMIN_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP general CONFIG_NEUTRON_KS_PW $ANSWERS_FILE`
 
-    CEILOMETER_ADMIN_AUTH_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT os_auth_url $CEILOMETER_CONF_FILE`
-    CEILOMETER_ADMIN_TENANT_NAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT os_tenant_name $CEILOMETER_CONF_FILE`
-    CEILOMETER_ADMIN_USERNAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT os_username $CEILOMETER_CONF_FILE`
-    CEILOMETER_ADMIN_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT os_password $CEILOMETER_CONF_FILE`
-    CEILOMETER_METERING_SECRET=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT metering_secret $CEILOMETER_CONF_FILE`
+        CEILOMETER_ADMIN_AUTH_URL=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT os_auth_url $CEILOMETER_CONF_FILE`
+        CEILOMETER_ADMIN_TENANT_NAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT os_tenant_name $CEILOMETER_CONF_FILE`
+        CEILOMETER_ADMIN_USERNAME=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT os_username $CEILOMETER_CONF_FILE`
+        CEILOMETER_ADMIN_PASSWORD=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT os_password $CEILOMETER_CONF_FILE`
+        CEILOMETER_METERING_SECRET=`get_openstack_option_value $RDO_ADMIN@$CONTROLLER_VM_IP DEFAULT metering_secret $CEILOMETER_CONF_FILE`
 
-    NEUTRON_ADMIN_USERNAME=neutron
+        NEUTRON_ADMIN_USERNAME=neutron
+    fi
+
+    GLANCE_PORT=9292
+    QPID_PORT=5672
 fi
-
-GLANCE_PORT=9292
-QPID_PORT=5672
 
 echo "Rebooting Linux nodes to load the new kernel"
 
@@ -232,17 +248,19 @@ run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP reboot
 run_ssh_cmd_with_retry $RDO_ADMIN@$NETWORK_VM_IP reboot
 run_ssh_cmd_with_retry $RDO_ADMIN@$QEMU_COMPUTE_VM_IP reboot
 
-echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
-wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
+if [ -n "$HYPERV_COMPUTE_VM_IP" ]; then
+    echo "Waiting for WinRM HTTPS port to be available on $HYPERV_COMPUTE_VM_IP"
+    wait_for_listening_port $HYPERV_COMPUTE_VM_IP 5986 $MAX_WAIT_SECONDS
 
-HYPERV_VSWITCH_NAME=external
-RPC_BACKEND=ApacheQpid
+    HYPERV_VSWITCH_NAME=external
+    RPC_BACKEND=ApacheQpid
 
-$BASEDIR/deploy-hyperv-compute.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $OPENSTACK_RELEASE \
-$HYPERV_VSWITCH_NAME $GLANCE_HOST $RPC_BACKEND $QPID_HOST $QPID_USERNAME $QPID_PASSWORD $NEUTRON_URL \
-$NEUTRON_ADMIN_AUTH_URL $NEUTRON_ADMIN_TENANT_NAME $NEUTRON_ADMIN_USERNAME $NEUTRON_ADMIN_PASSWORD \
-$CEILOMETER_ADMIN_AUTH_URL $CEILOMETER_ADMIN_TENANT_NAME $CEILOMETER_ADMIN_USERNAME $CEILOMETER_ADMIN_PASSWORD \
-$CEILOMETER_METERING_SECRET
+    $BASEDIR/deploy-hyperv-compute.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $OPENSTACK_RELEASE \
+    $HYPERV_VSWITCH_NAME $GLANCE_HOST $RPC_BACKEND $QPID_HOST $QPID_USERNAME $QPID_PASSWORD $NEUTRON_URL \
+    $NEUTRON_ADMIN_AUTH_URL $NEUTRON_ADMIN_TENANT_NAME $NEUTRON_ADMIN_USERNAME $NEUTRON_ADMIN_PASSWORD \
+    $CEILOMETER_ADMIN_AUTH_URL $CEILOMETER_ADMIN_TENANT_NAME $CEILOMETER_ADMIN_USERNAME $CEILOMETER_ADMIN_PASSWORD \
+    $CEILOMETER_METERING_SECRET
+fi
 
 echo "Wait for reboot"
 sleep 120
