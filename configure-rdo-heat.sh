@@ -43,6 +43,9 @@ crudini --set /etc/heat/heat.conf DEFAULT rpc_backend heat.openstack.common.rpc.
 crudini --set /etc/heat/heat.conf DEFAULT qpid_hostname $QPID_HOST
 crudini --set /etc/heat/heat.conf DEFAULT qpid_username $QPID_USERNAME
 crudini --set /etc/heat/heat.conf DEFAULT qpid_password $QPID_PASSWORD
+crudini --set /etc/heat/heat.conf keystone_authtoken admin_tenant_name services
+crudini --set /etc/heat/heat.conf keystone_authtoken admin_user heat
+crudini --set /etc/heat/heat.conf keystone_authtoken admin_password $HEAT_USER_PW
 
 # Note: had to do this, possibly a bug in the heat RPMs
 chown heat.heat /var/log/heat/*
