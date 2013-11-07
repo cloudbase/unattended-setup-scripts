@@ -9,6 +9,7 @@ HEAT_DB_PW=Passw0rd
 HEAT_USER_PW=Passw0rd
 HEAT_HOSTNAME=192.168.209.130
 HEAT_CFN_HOSTNAME=$HEAT_HOSTNAME
+QPID_HOST=$HEAT_HOSTNAME
 
 crudini --set /etc/heat/heat.conf DEFAULT sql_connection mysql://heat:$HEAT_DB_PW@localhost/heat
 heat-db-setup rpm -y -r $CONFIG_ROOT_MYSQL_PW -p $HEAT_DB_PW
@@ -36,7 +37,7 @@ crudini --set /etc/heat/heat.conf DEFAULT heat_watch_server_url http://$HEAT_HOS
 #crudini --set /etc/heat/heat.conf DEFAULT debug true
 #crudini --set /etc/heat/heat.conf DEFAULT verbose true
 crudini --set /etc/heat/heat.conf DEFAULT rpc_backend heat.openstack.common.rpc.impl_qpid
-crudini --set /etc/heat/heat.conf DEFAULT qpid_hostname $HEAT_HOSTNAM
+crudini --set /etc/heat/heat.conf DEFAULT qpid_hostname $QPID_HOST
 crudini --set /etc/heat/heat.conf DEFAULT qpid_username guest
 crudini --set /etc/heat/heat.conf DEFAULT qpid_password guest
 
