@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-if [ $# -ne 8 ]; then
+if [ $# -lt 8 ]; then
     echo "Usage: $0 <openstack_release> <ssh_key_file> <controller_host_name> <controller_host_ip> <network_host_name> <network_host_ip> <qemu_compute_host_name> <qemu_compute_host_ip> <hyperv_compute_host_name> <hyperv_compute_host_ip>"
     exit 1
 fi
