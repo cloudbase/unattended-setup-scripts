@@ -62,6 +62,11 @@ echo "Password: $PASSWORD"
 #Now connect via RDP on $FLOAT_IP with creedentials Admin and $PASSWORD
 #This will be automated with WinRM ASAP
 
+#Check hostname
+#hostname == $VM_NAME
+
+read
+
 # Check VirtIO drivers
 #(Get-NetAdapter).DriverDescription == "Red Hat VirtIO Ethernet Adapter"
 
