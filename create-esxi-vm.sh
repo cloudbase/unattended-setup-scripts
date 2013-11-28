@@ -3,8 +3,8 @@ set -e
 
 #TODO: use getops for command line parsing
 
-if [ $# -lt 14 ]; then
-    echo "Usage: $0 <datastore> <guest_os> <vm_name> <resource_pool_name> <ram> <vcpus> <vcores> <vmdk_size> <vmdk_template_path> <iso_path> <vmware_tools_iso> <floppy_template_path> <nested_hypervisor_support> <boot_vm> (<port_group_name>)*"
+if [ $# -lt 15 ]; then
+    echo "Usage: $0 <datastore> <guest_os> <vm_name> <resource_pool_name> <ram> <vcpus> <vcores> <vmdk_size> <vmdk_template_path> <iso_path> <vmware_tools_iso> <floppy_template_path> <nested_hypervisor_support> <net_adapter_type> <boot_vm> (<port_group_name>)*"
     exit 1
 fi
 
@@ -21,8 +21,9 @@ ISO_PATH=$10
 VMWARE_TOOLS_ISO=$11
 FLOPPY_TEMPLATE_PATH=$12
 NESTED_HYPERVISOR=$13
-BOOT=$14
-FIRST_NETWORK_IDX=15
+NET_ADAPTER_TYPE=$14
+BOOT=$15
+FIRST_NETWORK_IDX=16
 
 VMDK_FILE_NAME=$VM_NAME.vmdk
 FLOPPY_FILE_NAME=floppy.flp
@@ -185,7 +186,7 @@ do
     if [[ $i -gt $FIRST_NETWORK_IDX || $i -eq $FIRST_NETWORK_IDX ]]; then
             cat << EOF >> "$VMX_PATH"
 ethernet$j.present = "TRUE"                                        
-ethernet$j.virtualDev = "e1000e"                                   
+ethernet$j.virtualDev = "$NET_ADAPTER_TYPE"                                   
 ethernet$j.networkName = "$p"                            
 ethernet$j.addressType = "generated"
 EOF

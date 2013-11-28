@@ -17,6 +17,8 @@ NETWORK=${8:-"VM Network"}
 
 TEMPLATE_DATASTORE=datastore1
 
+NET_ADAPTER_TYPE=vmxnet3
+
 ESXI_BASEDIR=/vmfs/volumes/datastore1/unattended-scripts
 TEMPLATE_BASEDIR=/vmfs/volumes/$TEMPLATE_DATASTORE/$TEMPLATE_NAME
 
@@ -25,7 +27,7 @@ GUEST_OS=`ssh $ESXI_USER@$ESXI_HOST "sed -rn 's/guestOS = \"(.+)\"/\1/p'" $TEMPL
 
 TEMPLATE_VMDK=$TEMPLATE_BASEDIR/$TEMPLATE_NAME.vmdk
 
-ssh $ESXI_USER@$ESXI_HOST $ESXI_BASEDIR/create-esxi-vm.sh $DATASTORE $GUEST_OS $VM_NAME $POOL_NAME $RAM 2 2 - $TEMPLATE_VMDK - - - false true \""$NETWORK"\"
+ssh $ESXI_USER@$ESXI_HOST $ESXI_BASEDIR/create-esxi-vm.sh $DATASTORE $GUEST_OS $VM_NAME $POOL_NAME $RAM 2 2 - $TEMPLATE_VMDK - - - false $NET_ADAPTER_TYPE true \""$NETWORK"\"
 
 echo "VM $VM_NAME started"
 
