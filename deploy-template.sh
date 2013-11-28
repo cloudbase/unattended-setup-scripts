@@ -2,24 +2,25 @@
 set -e
 
 if [ $# -lt 3 ]; then
-    echo "Usage: $0 <esxi_user> <esxi_host> <template> [<resource_pool_name>] [<datastore>] [<vm_name>] [<ram>] [<network>]"
+    echo "Usage: $0 <esxi_user> <esxi_host> <template> [<scripts_datastore>] [<resource_pool_name>] [<datastore>] [<vm_name>] [<ram>] [<network>]"
     exit 1
 fi
 
 ESXI_USER=$1
 ESXI_HOST=$2
 TEMPLATE_NAME=$3
-POOL_NAME=${4:-$ESXI_USER}
-DATASTORE=${5:-datastore1}
-VM_NAME=${6:-$TEMPLATE_NAME-$RANDOM}
-RAM=${7:-1024}
-NETWORK=${8:-"VM Network"}
+SCRIPTS_DATASTORE=${4:-ssd1}
+POOL_NAME=${5:-$ESXI_USER}
+DATASTORE=${6:-ssd1}
+VM_NAME=${7:-$TEMPLATE_NAME-$RANDOM}
+RAM=${8:-1024}
+NETWORK=${9:-"VM Network"}
 
 TEMPLATE_DATASTORE=ssd1
 
 NET_ADAPTER_TYPE=vmxnet3
 
-ESXI_BASEDIR=/vmfs/volumes/datastore1/unattended-scripts
+ESXI_BASEDIR=/vmfs/volumes/ssd1/unattended-scripts
 TEMPLATE_BASEDIR=/vmfs/volumes/$TEMPLATE_DATASTORE/$TEMPLATE_NAME
 
 TEMPLATE_VMX_FILE=$TEMPLATE_BASEDIR/$TEMPLATE_NAME.vmx

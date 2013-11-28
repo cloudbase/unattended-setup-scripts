@@ -1,21 +1,22 @@
 #!/bin/bash
 set -e
 
-if [ $# -ne 8 ]; then
-    echo "Usage: $0 <esxi_user> <esxi_host> <datastore> <name> <esxi_public_switch> <esxi_public_vnic> <linux_template_vmdk> <hyperv_template_vmdk>"
+if [ $# -ne 9 ]; then
+    echo "Usage: $0 <esxi_user> <esxi_host> <scripts_datastore> <datastore> <name> <esxi_public_switch> <esxi_public_vnic> <linux_template_vmdk> <hyperv_template_vmdk>"
     exit 1
 fi
 
 ESXI_USER=$1
 ESXI_HOST=$2
-DATASTORE=$3
-DEVSTACK_NAME=$4
-ESXI_PUBLIC_SWITCH=$5
-ESXI_PUBLIC_VNIC=$6
-LINUX_TEMPLATE_VMDK=$7
-HYPERV_TEMPLATE_VMDK=$8
+SCRIPTS_DATASTORE=$3
+DATASTORE=$4
+DEVSTACK_NAME=$5
+ESXI_PUBLIC_SWITCH=$6
+ESXI_PUBLIC_VNIC=$7
+LINUX_TEMPLATE_VMDK=$8
+HYPERV_TEMPLATE_VMDK=$9
 
-ESXI_BASEDIR=/vmfs/volumes/datastore1/unattended-scripts
+ESXI_BASEDIR=/vmfs/volumes/$SCRIPTS_DATASTORE/unattended-scripts
 VM_IPS_FILE=`mktemp -u /tmp/devstack_ips.XXXXXX`
 
 BASEDIR=$(dirname $0)

@@ -1,20 +1,21 @@
 #!/bin/bash
 set -e
 
-if [ $# -ne 9 ]; then
-    echo "Usage: $0 <esxi_user> <esxi_host> <datastore> <openstack_release> <rdo_name> <esxi_public_switch> <esxi_public_vnic> <linux_template_vmdk> <hyperv_template_vmdk>"
+if [ $# -ne 10 ]; then
+    echo "Usage: $0 <esxi_user> <esxi_host> <scripts_datastore> <datastore> <openstack_release> <rdo_name> <esxi_public_switch> <esxi_public_vnic> <linux_template_vmdk> <hyperv_template_vmdk>"
     exit 1
 fi
 
 ESXI_USER=$1
 ESXI_HOST=$2
-DATASTORE=$3
-OPENSTACK_RELEASE=$4
-RDO_NAME=$5
-ESXI_PUBLIC_SWITCH=$6
-ESXI_PUBLIC_VNIC=$7
-LINUX_TEMPLATE_VMDK=$8
-HYPERV_TEMPLATE_VMDK=$9
+SCRIPTS_DATASTORE=$3
+DATASTORE=$4
+OPENSTACK_RELEASE=$5
+RDO_NAME=$6
+ESXI_PUBLIC_SWITCH=$7
+ESXI_PUBLIC_VNIC=$8
+LINUX_TEMPLATE_VMDK=$9
+HYPERV_TEMPLATE_VMDK=${10}
 
 BASEDIR=$(dirname $0)
 
@@ -29,7 +30,7 @@ grizzly|havana)
     ;;
 esac
 
-ESXI_BASEDIR=/vmfs/volumes/datastore1/unattended-scripts
+ESXI_BASEDIR=/vmfs/volumes/$SCRIPTS_DATASTORE/unattended-scripts
 RDO_VM_IPS_FILE=`mktemp -u /tmp/rdo_ips.XXXXXX`
 
 ssh $ESXI_USER@$ESXI_HOST $ESXI_BASEDIR/deploy-rdo-esxi-vms.sh $DATASTORE $RDO_NAME $ESXI_PUBLIC_SWITCH $ESXI_PUBLIC_VNIC "$LINUX_TEMPLATE_VMDK" "$HYPERV_TEMPLATE_VMDK" $RDO_VM_IPS_FILE

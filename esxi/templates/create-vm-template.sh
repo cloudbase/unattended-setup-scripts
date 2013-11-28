@@ -30,22 +30,23 @@ NET_ADAPTER_TYPE=e1000e
 DATASTORE_PATH=/vmfs/volumes/$DATASTORE
 
 BASEDIR=$(dirname $0)
+ESXI_SCRIPTS_DIR="$BASEDIR/.."
 
-$BASEDIR/delete-esxi-vm.sh "$VM_NAME" "$DATASTORE"
+$ESXI_SCRIPTS_DIR/delete-esxi-vm.sh "$VM_NAME" "$DATASTORE"
 
 echo "Creating VM"
-$BASEDIR/create-esxi-vm.sh $DATASTORE $GUEST_OS "$VM_NAME" $POOL_NAME $RAM 2 2 $VMDK_SIZE - $ISO_PATH $VMWARE_TOOLS_ISO $FLOPPY_PATH false $NET_ADAPTER_TYPE true "$VM_NETWORK"
+$ESXI_SCRIPTS_DIR/create-esxi-vm.sh $DATASTORE $GUEST_OS "$VM_NAME" $POOL_NAME $RAM 2 2 $VMDK_SIZE - $ISO_PATH $VMWARE_TOOLS_ISO $FLOPPY_PATH false $NET_ADAPTER_TYPE true "$VM_NETWORK"
 
 # Set permission to ReadOnly for everybody except the current user
-$BASEDIR/set-esxi-vm-permission-all-users.sh "$VM_NAME" ReadOnly "$USER"
+$ESXI_SCRIPTS_DIR/set-esxi-vm-permission-all-users.sh "$VM_NAME" ReadOnly "$USER"
 
 if [ "$WAIT" == "true" ] || [ "$SNAPSHOT_VM" == "true" ]; then
     echo "Waiting for the VM setup to complete..."
-    $BASEDIR/wait-for-esxi-vm-state.sh "$VM_NAME" off $WAIT_INTERVAL $MAX_WAIT
+    $ESXI_SCRIPTS_DIR/wait-for-esxi-vm-state.sh "$VM_NAME" off $WAIT_INTERVAL $MAX_WAIT
 
     if [ "$SNAPSHOT_VM" == "true" ]; then
         echo "Creating VM snapshot" 
-        $BASEDIR/create-esxi-vm-snapshot.sh "$VM_NAME" "$SNAPSHOT_NAME" false   
+        $ESXI_SCRIPTS_DIR/create-esxi-vm-snapshot.sh "$VM_NAME" "$SNAPSHOT_NAME" false   
     fi
 fi
 

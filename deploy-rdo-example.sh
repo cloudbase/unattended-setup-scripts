@@ -1,28 +1,30 @@
 #!/bin/bash
 set -e
 
-if [ $# -lt 3 ]; then
-    echo "Usage: $0 <esxi_user> <esxi_host> <openstack_release> [<use_linked_vmdks>]"
+if [ $# -lt 6 ]; then
+    echo "Usage: $0 <esxi_user> <esxi_host> <scripts_datastore> <templates_datastore> <datastore> <openstack_release> [<use_linked_vmdks>]"
     exit 1
 fi
 
 ESXI_USER=$1
 ESXI_HOST=$2
-OPENSTACK_RELEASE=$3
-VMDK_OPTION=$4
+SCRIPTS_DATASTORE=$3
+TEMPLATES_DATASTORE=$4
+DATASTORE=$5
+OPENSTACK_RELEASE=$6
+VMDK_OPTION=$7
 
 RDO_NAME=rdo-test-$RANDOM
 
-DATASTORE=ssd1
 ESXI_PUBLIC_SWITCH=vSwitch0
 ESXI_PUBLIC_VMNIC=vmnic0
 
-LINUX_TEMPLATE_VMDK=/vmfs/volumes/datastore1/centos-6.4-template-40G/centos-6.4-template-40G.vmdk
+LINUX_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/centos-6.4-template-100G/centos-6.4-template-40G.vmdk
 
 if [ "$OPENSTACK_RELEASE" == "grizzly" ]; then
-    HYPERV_TEMPLATE_VMDK=/vmfs/volumes/datastore1/hyperv-2012-template-80G/hyperv-2012-template-80G.vmdk
+    HYPERV_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/hyperv-2012-template-100G/hyperv-2012-template-80G.vmdk
 else
-    HYPERV_TEMPLATE_VMDK=/vmfs/volumes/datastore1/hyperv-2012-r2-template-80G/hyperv-2012-r2-template-80G.vmdk
+    HYPERV_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/hyperv-2012-r2-template-100G/hyperv-2012-r2-template-80G.vmdk
 fi
 
 if [ "$VMDK_OPTION" == "use_linked_vmdks" ]; then
@@ -34,5 +36,5 @@ BASEDIR=$(dirname $0)
 
 echo "Deploying RDO: $RDO_NAME"
 
-$BASEDIR/deploy-rdo.sh $ESXI_USER $ESXI_HOST "$DATASTORE" $OPENSTACK_RELEASE "$RDO_NAME" "$ESXI_PUBLIC_SWITCH" $ESXI_PUBLIC_VMNIC "$LINUX_TEMPLATE_VMDK" "$HYPERV_TEMPLATE_VMDK"
+$BASEDIR/deploy-rdo.sh $ESXI_USER $ESXI_HOST "$SCRIPTS_DATASTORE" "$DATASTORE" $OPENSTACK_RELEASE "$RDO_NAME" "$ESXI_PUBLIC_SWITCH" $ESXI_PUBLIC_VMNIC "$LINUX_TEMPLATE_VMDK" "$HYPERV_TEMPLATE_VMDK"
 
