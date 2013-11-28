@@ -19,12 +19,12 @@ RDO_NAME=rdo-test-$RANDOM
 ESXI_PUBLIC_SWITCH=vSwitch0
 ESXI_PUBLIC_VMNIC=vmnic0
 
-LINUX_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/centos-6.4-template-100G/centos-6.4-template-40G.vmdk
+LINUX_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/centos-6.4-template-100G/centos-6.4-template-100G.vmdk
 
 if [ "$OPENSTACK_RELEASE" == "grizzly" ]; then
-    HYPERV_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/hyperv-2012-template-100G/hyperv-2012-template-80G.vmdk
+    HYPERV_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/hyperv-2012-template-100G/hyperv-2012-template-100G.vmdk
 else
-    HYPERV_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/hyperv-2012-r2-template-100G/hyperv-2012-r2-template-80G.vmdk
+    HYPERV_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/hyperv-2012-r2-template-100G/hyperv-2012-r2-template-100G.vmdk
 fi
 
 if [ "$VMDK_OPTION" == "use_linked_vmdks" ]; then

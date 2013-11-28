@@ -18,8 +18,8 @@ DEVSTACK_NAME=devstack-test-$RANDOM
 ESXI_PUBLIC_SWITCH=vSwitch0
 ESXI_PUBLIC_VMNIC=vmnic0
 
-LINUX_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/ubuntu-12.04-server-template-100G/ubuntu-12.04-server-template-40G.vmdk
-HYPERV_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/hyperv-2012-r2-template-100G/hyperv-2012-r2-template-80G.vmdk
+LINUX_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/ubuntu-12.04-server-template-100G/ubuntu-12.04-server-template-100G.vmdk
+HYPERV_TEMPLATE_VMDK=/vmfs/volumes/$TEMPLATES_DATASTORE/hyperv-2012-r2-template-100G/hyperv-2012-r2-template-100G.vmdk
 
 if [ "$VMDK_OPTION" == "use_linked_vmdks" ]; then
     LINUX_TEMPLATE_VMDK=${LINUX_TEMPLATE_VMDK%%.vmdk}-000001.vmdk
