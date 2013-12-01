@@ -70,6 +70,81 @@ function PullInstallRelease($project, $release, $version)
     InstallRelease $project $version
 }
 
+function GitClonePull($path, $url, $branch="master")
+{
+    Write-Host "Cloning / pulling: $url"
+
+    $needspull = $true
+
+    if (!(Test-Path -path $path))
+    {
+        git clone -b $branch $url
+        if ($LastExitCode) { throw "git clone failed" }
+        $needspull = $false
+    }
+
+    if ($needspull)
+    {
+        pushd .
+        try
+        {
+            cd $path
+
+            $branchFound = (git branch)  -match "(.*\s)?$branch"
+            if ($LastExitCode) { throw "git branch failed" }
+
+            if($branchFound)
+            {
+                git checkout $branch
+                if ($LastExitCode) { throw "git checkout failed" }
+            }
+            else
+            {
+                git checkout -b $branch origin/$branch
+                if ($LastExitCode) { throw "git checkout failed" }
+            }
+
+            git reset --hard
+            if ($LastExitCode) { throw "git reset failed" }
+
+            git clean -f -d
+            if ($LastExitCode) { throw "git clean failed" }
+
+            git pull
+            if ($LastExitCode) { throw "git pull failed" }
+        }
+        finally
+        {
+            popd
+        }
+    }
+}
+
+function PullInstall($path, $url)
+{
+    GitClonePull $path $url
+
+    pushd .
+    try
+    {
+        cd $path
+
+        python setup.py build --force
+        if ($LastExitCode) { throw "python setup.py build failed" }
+
+        python setup.py install --force
+        if ($LastExitCode) { throw "python setup.py install failed" }
+
+        # Workaround for a setup related issue
+        python setup.py install
+        if ($LastExitCode) { throw "python setup.py install failed" }
+    }
+    finally
+    {
+        popd
+    }
+}
+
 function InstallPythonDep($url, $filename) {
 	(new-object System.Net.WebClient).DownloadFile($url, "$pwd\$filename")
 	Start-Process -Wait $filename
@@ -88,11 +163,11 @@ $ENV:PATH += ";C:\Python27;C:\Python27\Scripts"
 InstallMSI "http://freefr.dl.sourceforge.net/project/sevenzip/7-Zip/9.22/7z922-x64.msi" "7z922-x64.msi"
 $ENV:PATH += ";$ENV:ProgramFiles\7-Zip"
 
-#$filename = "Win32OpenSSL_Light-1_0_1e.exe"
-#(new-object System.Net.WebClient).DownloadFile("http://slproweb.com/download/$filename", "$pwd\$filename")
-#Start-Process -Wait -FilePath $filename -ArgumentList "/silent /verysilent /sp- /suppressmsgboxes"
-#del $filename
-#$ENV:PATH += ";C:\OpenSSL-Win32\Bin"
+$filename = "Git-1.8.4-preview20130916.exe"
+(new-object System.Net.WebClient).DownloadFile("https://msysgit.googlecode.com/files/$filename", "$pwd\$filename")
+Start-Process -Wait -FilePath $filename -ArgumentList "/silent" -WindowStyle Hidden
+del $filename
+# In "%ProgramFiles% (x86)\Git\etc\gitconfig" set "autocrlf = false"
 
 InstallPythonDep "https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11.win32-py2.7.exe#md5=57e1e64f6b7c7f1d2eddfc9746bbaf20" "setuptools-0.6c11.win32-py2.7.exe"
 InstallPythonDep "https://pypi.python.org/packages/2.7/p/pyOpenSSL/pyOpenSSL-0.13.1.win32-py2.7.exe#md5=02b016ed32fffcff56568e5834edcae6" "pyOpenSSL-0.13.1.win32-py2.7.exe"
@@ -106,14 +181,15 @@ InstallPythonDep "http://www.voidspace.org.uk/downloads/pycrypto26/pycrypto-2.6.
 
 easy_install.exe pip
 if ($LastExitCode) { throw "easy_install failed"}
-pip install pbr==0.5.22
-if ($LastExitCode) { throw "pip install failed"}
 pip install qpid-python
 if ($LastExitCode) { throw "pip install failed"}
+
+PullInstall "pbr" "https://github.com/openstack-dev/pbr.git"
+Remove-Item -Recurse -Force "pbr"
 
 PullRelease "nova" "havana" "2013.2"
 
 (new-object System.Net.WebClient).DownloadFile("https://raw.github.com/openstack/nova/efb409019b2a4e711eb09cb1976aa94c90b3d4ba/requirements.txt", "$pwd\dist\nova-2013.2\requirements.txt")
 
 InstallRelease "nova" "2013.2"
-
+Remove-Item -Recurse -Force "dist"
