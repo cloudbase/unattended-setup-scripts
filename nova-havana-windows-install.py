@@ -110,14 +110,7 @@ pip install qpid-python
 
 PullRelease "nova" "havana" "2013.2"
 
-#Note: there's a conflit with the version of "six" in use. You'll see an error if you try to start nova-compute
+(new-object System.Net.WebClient).DownloadFile("https://raw.github.com/openstack/nova/efb409019b2a4e711eb09cb1976aa94c90b3d4ba/requirements.txt", "$pwd\dist\nova-2013.2\requirements.txt")
 
-notepad++ dist\nova-2013.2\requirements.txt
-
-Replace the line "six<1.40" with "six"
-
-pip install -U six
 InstallRelease "nova" "2013.2"
-
-
 
