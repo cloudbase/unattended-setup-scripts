@@ -146,12 +146,14 @@ function PullInstall($path, $url)
 }
 
 function InstallPythonDep($url, $filename) {
+    Write-Host "Downloading and installing: $url"
 	(new-object System.Net.WebClient).DownloadFile($url, "$pwd\$filename")
 	Start-Process -Wait $filename
 	del $filename
 }
 
 function InstallMSI($url, $filename) {
+    Write-Host "Downloading and installing: $url"
 	(new-object System.Net.WebClient).DownloadFile($url, "$pwd\$filename")
 	Start-Process -Wait msiexec.exe -ArgumentList "/i $filename /qn"
 	del $filename
@@ -164,7 +166,9 @@ InstallMSI "http://freefr.dl.sourceforge.net/project/sevenzip/7-Zip/9.22/7z922-x
 $ENV:PATH += ";$ENV:ProgramFiles\7-Zip"
 
 $filename = "Git-1.8.4-preview20130916.exe"
-(new-object System.Net.WebClient).DownloadFile("https://msysgit.googlecode.com/files/$filename", "$pwd\$filename")
+$url = "https://msysgit.googlecode.com/files/$filename"
+Write-Host "Downloading and installing: $url"
+(new-object System.Net.WebClient).DownloadFile($url, "$pwd\$filename")
 Start-Process -Wait -FilePath $filename -ArgumentList "/silent" -WindowStyle Hidden
 del $filename
 # In "%ProgramFiles% (x86)\Git\etc\gitconfig" set "autocrlf = false"
