@@ -193,8 +193,6 @@ PullInstall "pbr" "https://github.com/openstack-dev/pbr.git"
 Remove-Item -Recurse -Force "pbr"
 
 PullRelease "nova" "havana" "2013.2"
-
 (new-object System.Net.WebClient).DownloadFile("https://raw.github.com/openstack/nova/efb409019b2a4e711eb09cb1976aa94c90b3d4ba/requirements.txt", "$pwd\dist\nova-2013.2\requirements.txt")
-
 InstallRelease "nova" "2013.2"
 Remove-Item -Recurse -Force "dist"
