@@ -105,8 +105,11 @@ InstallPythonDep "http://downloads.sourceforge.net/project/numpy/NumPy/1.8.0/num
 InstallPythonDep "http://www.voidspace.org.uk/downloads/pycrypto26/pycrypto-2.6.win32-py2.7.exe" "pycrypto-2.6.win32-py2.7.exe"
 
 easy_install.exe pip
+if ($LastExitCode) { throw "easy_install failed"}
 pip install pbr==0.5.22
+if ($LastExitCode) { throw "pip install failed"}
 pip install qpid-python
+if ($LastExitCode) { throw "pip install failed"}
 
 PullRelease "nova" "havana" "2013.2"
 
