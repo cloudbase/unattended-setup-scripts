@@ -171,6 +171,7 @@ Write-Host "Downloading and installing: $url"
 (new-object System.Net.WebClient).DownloadFile($url, "$pwd\$filename")
 Start-Process -Wait -FilePath $filename -ArgumentList "/silent" -WindowStyle Hidden
 del $filename
+$ENV:PATH += ";$ENV:ProgramFiles (x86)\Git\bin\"
 # In "%ProgramFiles% (x86)\Git\etc\gitconfig" set "autocrlf = false"
 
 InstallPythonDep "https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11.win32-py2.7.exe#md5=57e1e64f6b7c7f1d2eddfc9746bbaf20" "setuptools-0.6c11.win32-py2.7.exe"
