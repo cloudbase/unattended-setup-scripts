@@ -4,8 +4,8 @@ function SetAdminOnlyACL($path) {
     $acl = New-Object System.Security.AccessControl.DirectorySecurity
     # Disable inheritance from parent
     $acl.SetAccessRuleProtection($true,$true)
-    
-    $fsRights = [System.Security.AccessControl.FileSystemRights]::FullControl 
+
+    $fsRights = [System.Security.AccessControl.FileSystemRights]::FullControl
     $inheritanceFlags = [System.Security.AccessControl.InheritanceFlags]"ContainerInherit, ObjectInherit"
     $propagationFlags = [System.Security.AccessControl.PropagationFlags]::None
     $aceType =[System.Security.AccessControl.AccessControlType]::Allow
@@ -13,13 +13,13 @@ function SetAdminOnlyACL($path) {
     # BUILTIN\Administrators, NT AUTHORITY\SYSTEM
     # Avoid using account names as they might change based on the locale
     foreach($sid in @("S-1-5-32-544", "S-1-5-18"))
-    {    
+    {
         $sidObj = New-Object System.Security.Principal.SecurityIdentifier($sid)
         $account = $sidObj.Translate( [System.Security.Principal.NTAccount])
-        $ace = New-Object System.Security.AccessControl.FileSystemAccessRule ($account, $fsRights, $inheritanceFlags, $propagationFlags, $aceType) 
+        $ace = New-Object System.Security.AccessControl.FileSystemAccessRule ($account, $fsRights, $inheritanceFlags, $propagationFlags, $aceType)
         $acl.AddAccessRule($ace)
     }
-    
+
     Set-ACL $path $acl
 }
 
@@ -45,9 +45,9 @@ $server_ext_conf_file="server_ext.cnf"
 
 $conf_base_url="https://raw.github.com/cloudbase/unattended-setup-scripts/master/"
 
-Invoke-WebRequest -Uri ($conf_base_url + $ca_conf_file) -OutFile "$ca_dir\$ca_conf_file"
-Invoke-WebRequest -Uri ($conf_base_url + $server_ext_conf_file) -OutFile "$ca_dir\$server_ext_conf_file"
-Invoke-WebRequest -Uri ($conf_base_url + $openssl_conf_file) -OutFile "$ca_dir\$openssl_conf_file"
+(new-object System.Net.WebClient).DownloadFile($conf_base_url + $ca_conf_file, "$ca_dir\$ca_conf_file")
+(new-object System.Net.WebClient).DownloadFile($conf_base_url + $server_ext_conf_file, "$ca_dir\$server_ext_conf_file")
+(new-object System.Net.WebClient).DownloadFile($conf_base_url + $openssl_conf_file, "$ca_dir\$openssl_conf_file")
 
 $ENV:PATH+=";C:\OpenSSL-Win32\bin"
 
