@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-if [ $# -ne 20 ]; then
+if [ $# -lt 15 ]; then
     echo "Usage: $0 <hyperv_host_ip> <hyperv_admin_username> <hyperv_password> <openstack_release> <vswitch_name> <glance_host> \
 <rpc_backend> <rpc_backend_host> <rpc_backend_username> <rpc_backend_password> <neutron_url> \
 <neutron_admin_auth_url> <neutron_admin_tenant_name> <neutron_admin_username> <neutron_admin_password> \
