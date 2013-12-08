@@ -19,6 +19,7 @@ ROUTER=$INT_IFACE_ADDR
 
 PROXY_PORT=8080
 APT_CACHER_PORT=3142
+HTTP_PORT=8081
 
 APT_CACHER_ADMIN=admin
 APT_CACHER_ADMIN_PASSWORD=Passw0rd
@@ -72,10 +73,13 @@ sed -i "s/^option domain-name-servers .*;$/option domain-name-servers $DOMAIN_NA
 sed -i "s/^#authoritative;$/authoritative;/g" /etc/dhcp/dhcpd.conf
 
 cat << EOF >> /etc/dhcp/dhcpd.conf
+option custom-proxy-server code 252 = text;
+
 subnet $SUBNET netmask $MASK {
     range $RANGE_START $RANGE_END;
     option routers $ROUTER;
     option ntp-servers pool.ntp.org;
+    option custom-proxy-server "http://$INT_IFACE_ADDR:$HTTP_PORT/wpad.dat";
 }
 
 EOF
@@ -109,6 +113,28 @@ acl Safe_ports port 777     # multiling http
 acl CONNECT method CONNECT
 acl internal_network src $INT_IFACE_NETWORK/$INT_IFACE_MASK_BITS
 
+acl windowsupdate dstdomain windowsupdate.microsoft.com
+acl windowsupdate dstdomain .update.microsoft.com
+acl windowsupdate dstdomain download.windowsupdate.com
+acl windowsupdate dstdomain redir.metaservices.microsoft.com
+acl windowsupdate dstdomain images.metaservices.microsoft.com
+acl windowsupdate dstdomain c.microsoft.com
+acl windowsupdate dstdomain www.download.windowsupdate.com
+acl windowsupdate dstdomain wustat.windows.com
+acl windowsupdate dstdomain crl.microsoft.com
+acl windowsupdate dstdomain sls.microsoft.com
+acl windowsupdate dstdomain productactivation.one.microsoft.com
+acl windowsupdate dstdomain ntservicepack.microsoft.com
+acl wuCONNECT dstdomain www.update.microsoft.com
+acl wuCONNECT dstdomain sls.microsoft.com
+
+# Make sure to have enough disk space for the cache (60GB)
+cache_dir ufs /var/spool/squid3 61440 16 256
+
+range_offset_limit 200 MB windowsupdate
+maximum_object_size 200 MB
+quick_abort_min -1
+
 cache_peer localhost parent $APT_CACHER_PORT 7 proxy-only no-query no-netdb-exchange connect-timeout=15
 acl aptget browser -i apt-get apt-http apt-cacher apt-proxy yum
 acl deburl urlpath_regex /(Packages|Sources|Release|Translations-.*)\(.(gpg|gz|bz2))?$ /pool/.*/.deb$ /(Sources|Packages).diff/ /dists/[^/]*/[^/]*/(binary-.*|source)/.
@@ -120,13 +146,24 @@ http_access allow manager localhost
 http_access deny manager
 http_access deny !Safe_ports
 http_access deny CONNECT !SSL_ports
+
 http_access allow localhost
 http_access allow internal_network
+
+http_access allow CONNECT wuCONNECT internal_network
+http_access allow CONNECT wuCONNECT localhost
+http_access allow windowsupdate internal_network
+http_access allow windowsupdate localhost
+
 http_access deny all
 
 http_port $PROXY_PORT transparent
 
 coredump_dir /var/spool/squid3
+
+refresh_pattern -i microsoft.com/.*\.(cab|exe|ms[i|u|f]|asf|wm[v|a]|dat|zip) 4320 80% 43200 reload-into-ims
+refresh_pattern -i windowsupdate.com/.*\.(cab|exe|ms[i|u|f]|asf|wm[v|a]|dat|zip) 4320 80% 43200 reload-into-ims
+refresh_pattern -i windows.com/.*\.(cab|exe|ms[i|u|f]|asf|wm[v|a]|dat|zip) 4320 80% 43200 reload-into-ims
 
 refresh_pattern ^ftp:       1440    20% 10080
 refresh_pattern ^gopher:    1440    0%  1440
@@ -143,4 +180,24 @@ sed -i "s/^*nat$/*nat\n-A PREROUTING -i eth1 -p tcp -m tcp --dport 80 -j DNAT --
 ufw allow in on $INT_IFACE to any port $PROXY_PORT proto tcp
 ufw disable && sudo ufw enable
 
+apt-get -y install apache2
 
+sed -i "s/^NameVirtualHost .*$/NameVirtualHost \*:$HTTP_PORT/g" /etc/apache2/ports.conf
+sed -i "s/^Listen .*$/Listen $HTTP_PORT/g" /etc/apache2/ports.conf
+sed -i "s/^<VirtualHost .*>$/<VirtualHost \*:$HTTP_PORT>/g" /etc/apache2/sites-available/default
+
+/usr/sbin/service apache2 restart
+
+# Allow on internal interface only
+ufw allow in on $INT_IFACE to any port $HTTP_PORT proto tcp
+
+cat << EOF > /var/www/wpad.dat
+function FindProxyForURL(url, host)
+{
+    return "PROXY $INT_IFACE_ADDR:$PROXY_PORT; DIRECT";
+}
+EOF
+
+cat << EOF >> /var/www/.htaccess
+AddType application/x-ns-proxy-autoconfig .dat
+EOF
