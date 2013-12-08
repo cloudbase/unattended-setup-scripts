@@ -110,7 +110,7 @@ acl CONNECT method CONNECT
 acl internal_network src $INT_IFACE_NETWORK/$INT_IFACE_MASK_BITS
 
 cache_peer localhost parent $APT_CACHER_PORT 7 proxy-only no-query no-netdb-exchange connect-timeout=15
-acl aptget browser -i apt-get apt-http apt-cacher apt-proxy
+acl aptget browser -i apt-get apt-http apt-cacher apt-proxy yum
 acl deburl urlpath_regex /(Packages|Sources|Release|Translations-.*)\(.(gpg|gz|bz2))?$ /pool/.*/.deb$ /(Sources|Packages).diff/ /dists/[^/]*/[^/]*/(binary-.*|source)/.
 cache_peer_access localhost allow aptget
 cache_peer_access localhost allow deburl
