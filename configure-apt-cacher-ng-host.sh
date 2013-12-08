@@ -42,7 +42,7 @@ sed -i 's/^DEFAULT_FORWARD_POLICY=.*$/DEFAULT_FORWARD_POLICY="ACCEPT"/g' /etc/de
 sed -i 's/^#net\/ipv4\/ip_forward=.*$/net\/ipv4\/ip_forward=1/g' /etc/ufw/sysctl.conf
 sed -i 's/^#net\/ipv6\/conf\/default\/forwarding=.*$/net\/ipv6\/conf\/default\/forwarding=1/g' /etc/ufw/sysctl.conf
 
-sed -i "s/^# Don't delete these required lines, otherwise there will be errors$/*nat\n:POSTROUTING ACCEPT \[0:0\]\n-A POSTROUTING -o $EXT_IFACE -j MASQUERADE\nCOMMIT\n\n# Don't delete these required lines, otherwise there will be errors\n/g" /etc/ufw/before.rules
+sed -i "s/^# Don't delete these required lines, otherwise there will be errors$/*nat\n:POSTROUTING ACCEPT \[0:0\]\n-A POSTROUTING -s $INT_IFACE_NETWORK\/$INT_IFACE_MASK_BITS -o $EXT_IFACE -j MASQUERADE\nCOMMIT\n\n# Don't delete these required lines, otherwise there will be errors\n/g" /etc/ufw/before.rules
 
 function add_module {
     /sbin/modprobe $1
