@@ -20,6 +20,9 @@ ROUTER=$INT_IFACE_ADDR
 PROXY_PORT=8080
 APT_CACHER_PORT=3142
 
+APT_CACHER_ADMIN=admin
+APT_CACHER_ADMIN_PASSWORD=Passw0rd
+
 cat << EOF > /etc/network/interfaces
 auto lo
 iface lo inet loopback
@@ -79,11 +82,12 @@ EOF
 
 service isc-dhcp-server restart
 
+apt-get -y install apt-cacher-ng/precise-backports
+echo "AdminAuth: $APT_CACHER_ADMIN:$APT_CACHER_ADMIN_PASSWORD" >> /etc/apt-cacher-ng/security.conf
+/etc/init.d/apt-cacher-ng restart
 # apt-cacher-ng web UI
 ufw allow $APT_CACHER_PORT
 
-apt-get -y install apt-cacher-ng/precise-backports
-/etc/init.d/apt-cacher-ng restart
 
 apt-get -y install squid
 
