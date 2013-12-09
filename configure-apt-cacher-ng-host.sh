@@ -61,7 +61,7 @@ add_module iptable_nat
 add_module nf_nat_ftp
 
 ufw allow 22
-ufw disable && sudo ufw enable
+ufw disable && sudo ufw --force enable
 /sbin/sysctl -p
 
 apt-get -y install isc-dhcp-server
@@ -178,7 +178,7 @@ sed -i "s/^*nat$/*nat\n-A PREROUTING -i eth1 -p tcp -m tcp --dport 80 -j DNAT --
 
 # Allow on internal interface only
 ufw allow in on $INT_IFACE to any port $PROXY_PORT proto tcp
-ufw disable && sudo ufw enable
+ufw disable && sudo ufw --force enable
 
 apt-get -y install apache2
 
