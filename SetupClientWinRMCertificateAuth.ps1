@@ -5,8 +5,8 @@ $ErrorActionPreference = "Stop"
 #& winrm set winrm/config/client/auth `@`{Certificate=`"true`"`}
 
 $remote_host = "192.168.209.134"
-$host_cacert_path = "C:\ca_winrm.pem"
-$client_cert_pfx = "C:\cert.pfx"
+$host_cacert_path = "$(pwd)\ca_winrm.pem"
+$client_cert_pfx = "$(pwd)\cert.pfx"
 $client_cert_pfx_password = "Passw0rd"
 
 # Get the user's personal certificate store
