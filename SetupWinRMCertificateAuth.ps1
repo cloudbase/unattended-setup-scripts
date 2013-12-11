@@ -3,8 +3,9 @@ $ErrorActionPreference = "Stop"
 $username = "Administrator"
 $password = "Passw0rd"
 
-$client_cert_path = z:\Downloads\ca_test\certs\cert.pem"
-$client_ca_cert_path = "z:\Downloads\ca_test\certs\ca.pem"
+# The X509 certs can be combined in a #PKCS12 file
+$client_cert_path = "$(pwd)\cert.pem"
+$client_ca_cert_path = "$(pwd)\ca.pem"
 
 # Enable certificate authentication
 & winrm set winrm/config/service/auth `@`{Certificate=`"true`"`}
