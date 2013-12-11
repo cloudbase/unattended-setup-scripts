@@ -16,7 +16,8 @@ function SetAdminOnlyACL($path) {
     {
         $sidObj = New-Object System.Security.Principal.SecurityIdentifier($sid)
         $account = $sidObj.Translate( [System.Security.Principal.NTAccount])
-        $ace = New-Object System.Security.AccessControl.FileSystemAccessRule ($account, $fsRights, $inheritanceFlags, $propagationFlags, $aceType)
+        $ace = New-Object System.Security.AccessControl.FileSystemAccessRule (
+            $account, $fsRights, $inheritanceFlags, $propagationFlags, $aceType)
         $acl.AddAccessRule($ace)
     }
 
@@ -41,12 +42,10 @@ mkdir crl
 
 $ca_conf_file="ca.cnf"
 $openssl_conf_file="openssl.cnf"
-$server_ext_conf_file="server_ext.cnf"
 
 $conf_base_url="https://raw.github.com/cloudbase/unattended-setup-scripts/master/"
 
 (new-object System.Net.WebClient).DownloadFile($conf_base_url + $ca_conf_file, "$ca_dir\$ca_conf_file")
-(new-object System.Net.WebClient).DownloadFile($conf_base_url + $server_ext_conf_file, "$ca_dir\$server_ext_conf_file")
 (new-object System.Net.WebClient).DownloadFile($conf_base_url + $openssl_conf_file, "$ca_dir\$openssl_conf_file")
 
 $ENV:PATH+=";C:\OpenSSL-Win32\bin"
@@ -60,19 +59,26 @@ openssl req -newkey rsa:2048 -nodes -sha1 -keyout private\cert.key -keyform PEM 
 if ($LastExitCode) { throw "openssl failed to create server certificate request" }
 
 $ENV:OPENSSL_CONF="$ca_dir\ca.cnf"
-openssl ca -batch -notext -in certs\cert.req -out certs\cert.pem -extensions v3_req_server -extensions v3_req_server
+openssl ca -batch -notext -in certs\cert.req -out certs\cert.pem -extensions v3_req_server
 if ($LastExitCode) { throw "openssl CA failed to sign server certificate request" }
 
 # Import CA certificate
 $cacert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2("$ca_dir\certs\ca.pem")
-$castore = New-Object System.Security.Cryptography.X509Certificates.X509Store([System.Security.Cryptography.X509Certificates.StoreName]::Root, [System.Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)
+$castore = New-Object System.Security.Cryptography.X509Certificates.X509Store(
+    [System.Security.Cryptography.X509Certificates.StoreName]::Root,
+    [System.Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)
 $castore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
 $castore.Add($cacert)
 
 # Import server certificate
 openssl pkcs12 -export -in certs\cert.pem -inkey private\cert.key -out certs\cert.pfx -password pass:Passw0rd
-$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2("$ca_dir\certs\cert.pfx", "Passw0rd", ([System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::MachineKeySet -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet))
-$store = New-Object System.Security.Cryptography.X509Certificates.X509Store([System.Security.Cryptography.X509Certificates.StoreName]::My, [System.Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)
+$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(
+    "$ca_dir\certs\cert.pfx", "Passw0rd",
+    ([System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::MachineKeySet -bor
+     [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet))
+$store = New-Object System.Security.Cryptography.X509Certificates.X509Store(
+    [System.Security.Cryptography.X509Certificates.StoreName]::My,
+    [System.Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)
 $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
 $store.Add($cert)
 del certs\cert.pfx
