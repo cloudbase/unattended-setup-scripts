@@ -3,7 +3,6 @@ $ErrorActionPreference = "Stop"
 $username = "Administrator"
 $password = "Passw0rd"
 
-# The X509 certs can be combined in a #PKCS12 file
 $client_cert_path = "$(pwd)\cert.pem"
 $client_ca_cert_path = "$(pwd)\ca.pem"
 

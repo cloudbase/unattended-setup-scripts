@@ -4,8 +4,12 @@ set -e
 USER_NAME=user$RANDOM
 
 UPN=$USER_NAME@localhost
+
 PFX_FILE=`pwd`/cert.pfx
 PFX_PASSWORD=Passw0rd
+
+PEM_FILE=`pwd`/cert.pem
+PEM_CA_FILE=`pwd`/ca.pem
 
 CA_DIR=`mktemp -d -t openssl`
 
@@ -110,6 +114,9 @@ rm $EXT_CONF_FILE
 
 # Export the certificate, including the CA chain, into cert.pfx
 openssl pkcs12 -export -in certs/cert.pem -inkey private/cert.key -chain -CAfile certs/ca.pem -out $PFX_FILE -password pass:$PFX_PASSWORD
+
+cp certs/cert.pem $PEM_FILE
+cp certs/ca.pem $PEM_CA_FILE
 
 popd
 rm -rf $CA_DIR
