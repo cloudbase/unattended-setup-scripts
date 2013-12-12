@@ -34,6 +34,7 @@ foreach($cert in $coll) {
     }
     else {
         $store.Add($cert)
+        $clientcert = $cert
     }
 }
 
