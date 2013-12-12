@@ -14,3 +14,9 @@ $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate
 $store.Add($cert)
 
 new-item -path wsman:\localhost\listener -transport https -address * -CertificateThumbPrint $cert.Thumbprint -Force
+
+& winrm set winrm/config/service/auth `@`{Basic=`"true`"`}
+if ($LastExitCode) { throw "Failed to setup WinRM basic auth" }
+
+& netsh advfirewall firewall add rule name="WinRM HTTPS" dir=in action=allow protocol=TCP localport=5986
+if ($LastExitCode) { throw "Failed to setup WinRM HTTPS firewall rules" }
