@@ -6,8 +6,6 @@ UPN=$USER_NAME@localhost
 SUBJECT="/CN=$USER_NAME"
 
 PFX_FILE=winrm_client_cert.pfx
-PFX_PASSWORD=Passw0rd
-
 PEM_FILE=winrm_client_cert.pem
 
 PRIVATE_DIR=`mktemp -d -t cloudbase-initXXXXXX`
@@ -33,8 +31,9 @@ openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -out $PEM_FILE \
 rm $EXT_CONF_FILE
 unset OPENSSL_CONF
 
-openssl pkcs12 -export -in $PEM_FILE -inkey $KEY_FILE -out $PFX_FILE \
--password pass:$PFX_PASSWORD
+# This will ask for an export password.
+# To avoid it, add: -password pass:yourpassword
+openssl pkcs12 -export -in $PEM_FILE -inkey $KEY_FILE -out $PFX_FILE
 
 rm -rf $PRIVATE_DIR
 
