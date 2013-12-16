@@ -9,6 +9,7 @@ PFX_FILE=winrm_client_cert.pfx
 PFX_PASSWORD=Passw0rd
 
 PEM_FILE=winrm_client_cert.pem
+DER_FILE=winrm_client_cert.der
 
 PRIVATE_DIR=`mktemp -d -t openssl`
 chmod 700 $PRIVATE_DIR
@@ -37,7 +38,11 @@ openssl pkcs12 -export -in $PEM_FILE -inkey $KEY_FILE -out $PFX_FILE \
 
 rm -rf $PRIVATE_DIR
 
-THUMBPRINT=`openssl x509 -in $PEM_FILE -fingerprint -noout | sed -e 's/\://g' \
-| sed -n 's/^.*=\(.*\)$/\1/p'`
+# The DER format is easier to manipulate
+openssl x509 -inform PEM -in $PEM_FILE -outform DER -out $DER_FILE
+rm $PEM_FILE
+
+THUMBPRINT=`openssl x509 -inform DER -in $DER_FILE -fingerprint -noout | \
+sed -e 's/\://g' | sed -n 's/^.*=\(.*\)$/\1/p'`
 
 echo "Certificate Thumbprint: $THUMBPRINT"
