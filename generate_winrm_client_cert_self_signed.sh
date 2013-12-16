@@ -9,12 +9,11 @@ PFX_FILE=winrm_client_cert.pfx
 PFX_PASSWORD=Passw0rd
 
 PEM_FILE=winrm_client_cert.pem
-DER_FILE=winrm_client_cert.der
 
-PRIVATE_DIR=`mktemp -d -t openssl`
+PRIVATE_DIR=`mktemp -d -t cloudbase-initXXXXXX`
 chmod 700 $PRIVATE_DIR
 
-EXT_CONF_FILE=`mktemp -t openssl`
+EXT_CONF_FILE=`mktemp -t cloudbase-initXXXXXX.conf`
 
 KEY_FILE=$PRIVATE_DIR/cert.key
 
@@ -32,17 +31,14 @@ openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -out $PEM_FILE \
 -extensions v3_req_client 2> /dev/null
 
 rm $EXT_CONF_FILE
+unset OPENSSL_CONF
 
 openssl pkcs12 -export -in $PEM_FILE -inkey $KEY_FILE -out $PFX_FILE \
 -password pass:$PFX_PASSWORD
 
 rm -rf $PRIVATE_DIR
 
-# The DER format is easier to manipulate
-openssl x509 -inform PEM -in $PEM_FILE -outform DER -out $DER_FILE
-rm $PEM_FILE
-
-THUMBPRINT=`openssl x509 -inform DER -in $DER_FILE -fingerprint -noout | \
+THUMBPRINT=`openssl x509 -inform PEM -in $PEM_FILE -fingerprint -noout | \
 sed -e 's/\://g' | sed -n 's/^.*=\(.*\)$/\1/p'`
 
 echo "Certificate Thumbprint: $THUMBPRINT"
