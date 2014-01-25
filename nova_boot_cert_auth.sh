@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 PEM_FILE=winrm_client_cert.pem
@@ -11,7 +11,7 @@ FLAVOR=2
 # to overcome Nova's custom metadata length limit
 declare -a CERT=(`openssl x509 -inform pem -in "$PEM_FILE" -outform der | base64 -w 0 |sed -r 's/(.{255})/\1\n/g'`)
 
-nova boot  --flavor $FLAVOR --image "$IMAGE_NAME" --key-name $KEY1 $INSTANCE_NAME \
+nova boot  --flavor $FLAVOR --image "$IMAGE_NAME" --key-name $KEY $INSTANCE_NAME \
 --meta admin_cert0="${CERT[0]}" \
 --meta admin_cert1="${CERT[1]}" \
 --meta admin_cert2="${CERT[2]}" \
