@@ -21,7 +21,7 @@ echo "Getting console connect info"
 
 GET_CONSOLE_CONN_RESP=`curl -s -H "X-Auth-Token: $TOKEN" $NOVA_URL/os-console-auth-tokens/$CONSOLE_TOKEN -X "GET" -H 'Content-type: application/json'`
 
-echo $GET_CONSOLE_CONN_RESP
+#echo $GET_CONSOLE_CONN_RESP
 
 HOST=`echo $GET_CONSOLE_CONN_RESP | python -c "import json; import sys; d=json.load(sys.stdin); print d['console']['host']"`
 PORT=`echo $GET_CONSOLE_CONN_RESP | python -c "import json; import sys; d=json.load(sys.stdin); print d['console']['port']"`
