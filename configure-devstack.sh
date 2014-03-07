@@ -22,6 +22,8 @@ HYPERV_PASSWORD=$ADMIN_PASSWORD
 NOVA_CONF_FILE=/etc/nova/nova.conf
 CEILOMETER_CONF_FILE=/etc/ceilometer/ceilometer.conf
 
+MAX_WAIT_SECONDS=600
+
 BASEDIR=$(dirname $0)
 
 . $BASEDIR/utils.sh
