@@ -138,14 +138,14 @@ get_openstack_option_value () {
 }
 
 configure_ssh_pubkey_auth () {
-    USERNAME=$1
-    HOST=$2
-    SSH_KEY_FILE_PUB=$3
-    PASSWORD=$4
+    local USERNAME=$1
+    local HOST=$2
+    local SSH_KEY_FILE_PUB=$3
+    local PASSWORD=$4
 
-    MAX_WAIT_SECONDS=300
+    local MAX_WAIT_SECONDS=300
 
-    PUBKEYFILE=`mktemp -u /tmp/ssh_key_pub.XXXXXX`
+    local PUBKEYFILE=`mktemp -u /tmp/ssh_key_pub.XXXXXX`
 
     ssh-keygen -R $HOST
 
