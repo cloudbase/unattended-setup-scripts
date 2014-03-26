@@ -7,7 +7,7 @@ Invoke-WebRequest -uri "http://freefr.dl.sourceforge.net/project/sevenzip/7-Zip/
 Start-Process -Wait msiexec.exe -ArgumentList "/i $filename /qn"
 del $filename
 
-$filename="Win32OpenSSL_Light-1_0_1e.exe"
+$filename="Win32OpenSSL_Light-1_0_1f.exe"
 Invoke-WebRequest -Uri "http://slproweb.com/download/$filename" -OutFile $filename
 Start-Process -Wait -FilePath $filename -ArgumentList "/silent /verysilent /sp- /suppressmsgboxes"
 del $filename
