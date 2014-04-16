@@ -77,7 +77,7 @@ function Get-RandomPassword
             }
 
             $buffer | ForEach-Object { $password += "{0:X0}" -f $_ }
-            return $password
+            return ConvertTo-SecureString -AsPlainText $password -Force
         }
         finally
         {
