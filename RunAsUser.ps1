@@ -27,10 +27,11 @@ namespace PSCloudbase
     {
         const int LOGON32_LOGON_SERVICE = 5;
         const int LOGON32_PROVIDER_DEFAULT = 0;
-
+        const int TOKEN_ALL_ACCESS = 0x000f01ff;
         const uint GENERIC_ALL_ACCESS = 0x10000000;
-
         const uint INFINITE = 0xFFFFFFFF;
+        const uint PI_NOUI = 0x00000001;
+        const uint WAIT_FAILED = 0xFFFFFFFF;
 
         enum SECURITY_IMPERSONATION_LEVEL
         {
@@ -86,6 +87,57 @@ namespace PSCloudbase
             public IntPtr hStdError;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        struct PROFILEINFO {
+            public int dwSize;
+            public uint dwFlags;
+            [MarshalAs(UnmanagedType.LPTStr)]
+            public String lpUserName;
+            [MarshalAs(UnmanagedType.LPTStr)]
+            public String lpProfilePath;
+            [MarshalAs(UnmanagedType.LPTStr)]
+            public String lpDefaultPath;
+            [MarshalAs(UnmanagedType.LPTStr)]
+            public String lpServerName;
+            [MarshalAs(UnmanagedType.LPTStr)]
+            public String lpPolicyPath;
+            public IntPtr hProfile;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct USER_INFO_4
+        {
+            public string name;
+            public string password;
+            public int password_age;
+            public uint priv;
+            public string home_dir;
+            public string comment;
+            public uint flags;
+            public string script_path;
+            public uint auth_flags;
+            public string full_name;
+            public string usr_comment;
+            public string parms;
+            public string workstations;
+            public int last_logon;
+            public int last_logoff;
+            public int acct_expires;
+            public int max_storage;
+            public int units_per_week;
+            public IntPtr logon_hours;    // This is a PBYTE
+            public int bad_pw_count;
+            public int num_logons;
+            public string logon_server;
+            public int country_code;
+            public int code_page;
+            public IntPtr user_sid;     // This is a PSID
+            public int primary_group_id;
+            public string profile;
+            public string home_dir_drive;
+            public int password_expired;
+        }
+
         [DllImport("advapi32.dll", CharSet=CharSet.Auto, SetLastError=true)]
         extern static bool DuplicateTokenEx(
             IntPtr hExistingToken,
@@ -133,14 +185,31 @@ namespace PSCloudbase
         static extern bool GetExitCodeProcess(IntPtr hProcess,
                                               out uint lpExitCode);
 
+        [DllImport("userenv.dll", SetLastError=true, CharSet=CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool LoadUserProfile(IntPtr hToken,
+                                           ref PROFILEINFO lpProfileInfo);
+
+        [DllImport("userenv.dll", SetLastError=true, CharSet=CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool UnloadUserProfile(IntPtr hToken, IntPtr hProfile);
+
+         [DllImport("Netapi32.dll", CharSet=CharSet.Unicode, ExactSpelling=true)]
+        extern static int NetUserGetInfo(
+            [MarshalAs(UnmanagedType.LPWStr)] string ServerName,
+            [MarshalAs(UnmanagedType.LPWStr)] string UserName,
+            int level, out IntPtr BufPtr);
+
         public static uint RunProcess(string userName, string password,
                                       string domain, string cmd,
-                                      string arguments)
+                                      string arguments,
+                                      bool loadUserProfile = true)
         {
             bool retValue;
             IntPtr phToken = IntPtr.Zero;
             IntPtr phTokenDup = IntPtr.Zero;
             PROCESS_INFORMATION pInfo = new PROCESS_INFORMATION();
+            PROFILEINFO pi = new PROFILEINFO();
 
             try
             {
@@ -164,6 +233,27 @@ namespace PSCloudbase
                 STARTUPINFO sInfo = new STARTUPINFO();
                 sInfo.lpDesktop = "";
 
+                if(loadUserProfile)
+                {
+                    IntPtr userInfoPtr = IntPtr.Zero;
+                    int retValueNetUser = NetUserGetInfo(null, userName, 4,
+                                                         out userInfoPtr);
+                    if(retValueNetUser != 0)
+                        throw new Win32Exception(retValueNetUser);
+
+                    USER_INFO_4 userInfo = (USER_INFO_4)Marshal.PtrToStructure(
+                        userInfoPtr, typeof(USER_INFO_4));
+
+                    pi.dwSize = Marshal.SizeOf(pi);
+                    pi.dwFlags = PI_NOUI;
+                    pi.lpUserName = userName;
+                    pi.lpProfilePath = userInfo.profile;
+
+                    retValue = LoadUserProfile(phTokenDup, ref pi);
+                    if(!retValue)
+                        throw new Win32Exception(GetLastError());
+                }
+
                 retValue = CreateProcessAsUser(phTokenDup, cmd, arguments,
                                                ref sa, ref sa, false, 0,
                                                IntPtr.Zero, null,
@@ -171,10 +261,7 @@ namespace PSCloudbase
                 if(!retValue)
                     throw new Win32Exception(GetLastError());
 
-                WaitForSingleObject(pInfo.hProcess, INFINITE);
-
-                var lastErr = GetLastError();
-                if(lastErr != 0)
+                if(WaitForSingleObject(pInfo.hProcess, INFINITE) == WAIT_FAILED)
                     throw new Win32Exception(GetLastError());
 
                 uint exitCode;
@@ -186,6 +273,8 @@ namespace PSCloudbase
             }
             finally
             {
+                if(pi.hProfile != IntPtr.Zero)
+                    UnloadUserProfile(phTokenDup, pi.hProfile);
                 if(phToken != IntPtr.Zero)
                     CloseHandle(phToken);
                 if(phTokenDup != IntPtr.Zero)
@@ -212,7 +301,10 @@ function Start-ProcessAsUser
         [string]$Arguments,
 
         [parameter(Mandatory=$true)]
-        [PSCredential]$Credential
+        [PSCredential]$Credential,
+
+        [parameter()]
+        [bool]$LoadUserProfile = $true
     )
     process
     {
@@ -226,6 +318,6 @@ function Start-ProcessAsUser
 
         [PSCloudbase.ProcessManager]::RunProcess($nc.UserName, $nc.Password,
                                                  $domain, $Command,
-                                                 $Arguments)
+                                                 $Arguments, $LoadUserProfile)
     }
 }
