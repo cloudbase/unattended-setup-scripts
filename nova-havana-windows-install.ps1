@@ -174,7 +174,13 @@ del $filename
 $ENV:PATH += ";$ENV:ProgramFiles (x86)\Git\bin\"
 # In "%ProgramFiles% (x86)\Git\etc\gitconfig" set "autocrlf = false"
 
-InstallPythonDep "https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11.win32-py2.7.exe#md5=57e1e64f6b7c7f1d2eddfc9746bbaf20" "setuptools-0.6c11.win32-py2.7.exe"
+$filename="ez_setup.py"
+$url = "https://bitbucket.org/pypa/setuptools/raw/bootstrap/$filename"
+Write-Host "Downloading and installing: $url"
+(new-object System.Net.WebClient).DownloadFile($url, "$pwd\$filename")
+python $filename
+
+#InstallPythonDep "https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11.win32-py2.7.exe#md5=57e1e64f6b7c7f1d2eddfc9746bbaf20" "setuptools-0.6c11.win32-py2.7.exe"
 InstallPythonDep "https://pypi.python.org/packages/2.7/p/pyOpenSSL/pyOpenSSL-0.13.1.win32-py2.7.exe#md5=02b016ed32fffcff56568e5834edcae6" "pyOpenSSL-0.13.1.win32-py2.7.exe"
 InstallPythonDep "https://pypi.python.org/packages/2.7/g/greenlet/greenlet-0.4.1.win32-py2.7.exe#md5=8f12784e041be3d795fb2d6771b3af76" "greenlet-0.4.1.win32-py2.7.exe"
 InstallPythonDep "https://pypi.python.org/packages/2.7/l/lxml/lxml-3.2.4.win32-py2.7.exe#md5=bf69543928b7f5f638d30b8eddedda09" "lxml-3.2.4.win32-py2.7.exe"
