@@ -119,12 +119,23 @@ run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "packstack --gen-answer-file
 
 echo "Configuring Packstack answer file"
 
-run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "\
-crudini --set $ANSWERS_FILE general CONFIG_SSH_KEY /root/.ssh/id_rsa.pub && \
-crudini --set $ANSWERS_FILE general CONFIG_NTP_SERVERS 0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org,3.pool.ntp.org && \
-crudini --set $ANSWERS_FILE general CONFIG_CINDER_VOLUMES_SIZE 20G && \
-crudini --set $ANSWERS_FILE general CONFIG_NOVA_COMPUTE_HOSTS $QEMU_COMPUTE_VM_IP && \
-crudini --del $ANSWERS_FILE general CONFIG_NOVA_NETWORK_HOST"
+
+if [ "$OPENSTACK_RELEASE" == "grizzly" | "$OPENSTACK_RELEASE" == "havana" ]; then
+    run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "\
+    crudini --set $ANSWERS_FILE general CONFIG_SSH_KEY /root/.ssh/id_rsa.pub && \
+    crudini --set $ANSWERS_FILE general CONFIG_NTP_SERVERS 0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org,3.pool.ntp.org && \
+    crudini --set $ANSWERS_FILE general CONFIG_CINDER_VOLUMES_SIZE 20G && \
+    crudini --set $ANSWERS_FILE general CONFIG_NOVA_COMPUTE_HOSTS $QEMU_COMPUTE_VM_IP && \
+    crudini --del $ANSWERS_FILE general CONFIG_NOVA_NETWORK_HOST"
+else
+    run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "\
+    crudini --set $ANSWERS_FILE general CONFIG_SSH_KEY /root/.ssh/id_rsa.pub && \
+    crudini --set $ANSWERS_FILE general CONFIG_NTP_SERVERS 0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org,3.pool.ntp.org && \
+    crudini --set $ANSWERS_FILE general CONFIG_CINDER_VOLUMES_SIZE 20G && \
+    crudini --set $ANSWERS_FILE general CONFIG_COMPUTE_HOSTS $QEMU_COMPUTE_VM_IP && \
+    crudini --del $ANSWERS_FILE general CONFIG_NOVA_NETWORK_HOST"
+fi
+
 
 if [ "$OPENSTACK_RELEASE" == "grizzly" ]; then
     run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "\
@@ -135,11 +146,21 @@ if [ "$OPENSTACK_RELEASE" == "grizzly" ]; then
     crudini --set $ANSWERS_FILE general CONFIG_QUANTUM_OVS_VLAN_RANGES physnet1:1000:2000 && \
     crudini --set $ANSWERS_FILE general CONFIG_QUANTUM_OVS_BRIDGE_MAPPINGS physnet1:br-eth1 && \
     crudini --set $ANSWERS_FILE general CONFIG_QUANTUM_OVS_BRIDGE_IFACES br-eth1:eth1"
-else
+elif [ "$OPENSTACK_RELEASE" == "havana" ]; then
     run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "\
     crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_L3_HOSTS $NETWORK_VM_IP && \
     crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_DHCP_HOSTS $NETWORK_VM_IP && \
     crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_METADATA_HOSTS $NETWORK_VM_IP && \
+    crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_OVS_TENANT_NETWORK_TYPE vlan && \
+    crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_OVS_VLAN_RANGES physnet1:1000:2000 && \
+    crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS physnet1:br-eth1 && \
+    crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_OVS_BRIDGE_IFACES br-eth1:eth1"
+else
+    run_ssh_cmd_with_retry $RDO_ADMIN@$CONTROLLER_VM_IP "\
+    crudini --set $ANSWERS_FILE general CONFIG_NETWORK_HOSTS $NETWORK_VM_IP && \
+    crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_L2_PLUGIN openvswitch && \
+    crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_ML2_TYPE_DRIVERS local && \
+    crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_ML2_TENANT_NETWORK_TYPES local && \
     crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_OVS_TENANT_NETWORK_TYPE vlan && \
     crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_OVS_VLAN_RANGES physnet1:1000:2000 && \
     crudini --set $ANSWERS_FILE general CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS physnet1:br-eth1 && \
