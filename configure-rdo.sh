@@ -64,6 +64,7 @@ fi
 
 echo "Configuring networking"
 
+config_openstack_network_adapter $RDO_ADMIN@$CONTROLLER_VM_IP eth1
 set_hostname $RDO_ADMIN@$CONTROLLER_VM_IP $CONTROLLER_VM_NAME.$DOMAIN $CONTROLLER_VM_IP
 
 config_openstack_network_adapter $RDO_ADMIN@$NETWORK_VM_IP eth1

@@ -22,7 +22,7 @@ BASEDIR=$(dirname $0)
 . $BASEDIR/utils.sh
 
 case "$OPENSTACK_RELEASE" in
-grizzly|havana)
+grizzly|havana|icehouse)
     ;;
 *)
     echoerr "Unsupported OpenStack release: $OPENSTACK_RELEASE"
