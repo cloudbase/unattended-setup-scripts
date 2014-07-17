@@ -20,6 +20,20 @@ exec_with_retry2 () {
     return $EXIT
 }
 
+config_openstack_network_adapter () {
+    SSHUSER_HOST=$1
+    ADAPTER=$2
+
+    run_ssh_cmd_with_retry $SSHUSER_HOST "cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$ADAPTER
+    DEVICE="$ADAPTER"
+    BOOTPROTO="none"
+    MTU="1500"
+    ONBOOT="yes"
+    EOF"
+
+    run_ssh_cmd_with_retry $SSHUSER_HOST "ifup $ADAPTER"
+}
+
 exec_with_retry () {
     CMD=$1
     MAX_RETRIES=${2-10}

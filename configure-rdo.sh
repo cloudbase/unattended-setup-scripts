@@ -62,20 +62,6 @@ if [ -n "$HYPERV_COMPUTE_VM_IP" ]; then
     exec_with_retry "$BASEDIR/rename-windows-host.sh $HYPERV_COMPUTE_VM_IP $HYPERV_ADMIN $HYPERV_PASSWORD $HYPERV_COMPUTE_VM_NAME" 30 30
 fi
 
-config_openstack_network_adapter () {
-    SSHUSER_HOST=$1
-    ADAPTER=$2
-
-    run_ssh_cmd_with_retry $SSHUSER_HOST "cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$ADAPTER
-DEVICE="$ADAPTER"
-BOOTPROTO="none"
-MTU="1500"
-ONBOOT="yes"
-EOF"
-
-    run_ssh_cmd_with_retry $SSHUSER_HOST "ifup $ADAPTER"
-}
-
 echo "Configuring networking"
 
 set_hostname $RDO_ADMIN@$CONTROLLER_VM_IP $CONTROLLER_VM_NAME.$DOMAIN $CONTROLLER_VM_IP
