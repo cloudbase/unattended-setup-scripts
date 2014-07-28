@@ -11,10 +11,10 @@ function VerifyHash($filename, $expectedHash) {
 
 function InstallOpenSSL() {
     if (!(Test-Path $opensslPath)) {
-        $filename = "Win32OpenSSL_Light-1_0_1g.exe"
+        $filename = "Win32OpenSSL_Light-1_0_1h.exe"
         Invoke-WebRequest -Uri "http://slproweb.com/download/$filename" -OutFile $filename
 
-        VerifyHash $filename "910EB0864831FE34C09FBE975F5090B3F9883CCB"
+        VerifyHash $filename "25B3B7023159793DD613575E275016D91C91B4A4"
 
         Start-Process -Wait -FilePath $filename -ArgumentList "/silent /verysilent /sp- /suppressmsgboxes"
         del $filename
