@@ -99,3 +99,7 @@ New-Item -Path wsman:\localhost\listener -transport https -address * -Certificat
 Set-Item wsman:\localhost\service\Auth\Basic -Value $true
 
 CreateWinRMHttpsFirewallRule
+
+#reg key for use by automation to verify this script has completed
+if (-not (Test-Path HKLM:\SOFTWARE\cloudbase)) {New-Item -Path HKLM:\SOFTWARE\cloudbase}
+Set-ItemProperty -Path HKLM:\SOFTWARE\cloudbase -Name WinRMAccess -Value 1
