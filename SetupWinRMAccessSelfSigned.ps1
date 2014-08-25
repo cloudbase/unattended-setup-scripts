@@ -99,3 +99,6 @@ New-Item -Path wsman:\localhost\listener -transport https -address * -Certificat
 Set-Item wsman:\localhost\service\Auth\Basic -Value $true
 
 CreateWinRMHttpsFirewallRule
+
+#empty file, used by automation to verify this script has completed
+New-Item -Path $opensslPath\WinRM.touch -Type File
