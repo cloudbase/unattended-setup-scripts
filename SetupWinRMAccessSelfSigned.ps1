@@ -1,20 +1,22 @@
 $ErrorActionPreference = "Stop"
 
+Import-Module BitsTransfer
+
 $opensslPath = "$ENV:HOMEDRIVE\OpenSSL-Win32"
 
 function VerifyHash($filename, $expectedHash) {
     $hash = (Get-FileHash -Algorithm SHA1 $filename).Hash
     if ($hash -ne $expectedHash) {
-        throw "SHA1 hash not valid for file: $filename"
+        throw "SHA1 hash not valid for file: $filename. Expected: $expectedHash Current: $hash"
     }
 }
 
 function InstallOpenSSL() {
     if (!(Test-Path $opensslPath)) {
         $filename = "Win32OpenSSL_Light-1_0_1i.exe"
-        Invoke-WebRequest -Uri "http://slproweb.com/download/$filename" -OutFile $filename
+        Start-BitsTransfer -Source "http://slproweb.com/download/$filename" -Destination $filename
 
-        VerifyHash $filename "303A6010192161C3BA103978DD4D6932CA9340DC"
+        VerifyHash $filename "439BA19F18803432E39F0056209B010A63B96644"
 
         Start-Process -Wait -FilePath $filename -ArgumentList "/silent /verysilent /sp- /suppressmsgboxes"
         del $filename
