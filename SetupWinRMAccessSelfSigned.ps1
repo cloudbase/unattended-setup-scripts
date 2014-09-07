@@ -2,6 +2,11 @@ $ErrorActionPreference = "Stop"
 
 Import-Module BitsTransfer
 
+if($PSVersionTable.PSVersion.Major -lt 4) {
+    $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
+    . "$scriptPath\GetFileHash.ps1"
+}
+
 $opensslPath = "$ENV:HOMEDRIVE\OpenSSL-Win32"
 
 function VerifyHash($filename, $expectedHash) {
