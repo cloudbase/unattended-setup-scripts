@@ -2,18 +2,29 @@ $ErrorActionPreference = "Stop"
 
 Import-Module BitsTransfer
 
+$opensslPath = "$ENV:HOMEDRIVE\OpenSSL-Win32"
+
 if($PSVersionTable.PSVersion.Major -lt 4) {
     $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
     . "$scriptPath\GetFileHash.ps1"
 }
-
-$opensslPath = "$ENV:HOMEDRIVE\OpenSSL-Win32"
 
 function VerifyHash($filename, $expectedHash) {
     $hash = (Get-FileHash -Algorithm SHA1 $filename).Hash
     if ($hash -ne $expectedHash) {
         throw "SHA1 hash not valid for file: $filename. Expected: $expectedHash Current: $hash"
     }
+}
+
+function InstallVCRedist2008() {
+    $filename = "vcredist_x86_2008.exe"
+    $url = "http://download.microsoft.com/download/1/1/1/1116b75a-9ec3-481a-a3c8-1777b5381140/vcredist_x86.exe"
+    Start-BitsTransfer -Source $url -Destination $filename
+
+    VerifyHash $filename "56719288ab6514c07ac2088119d8a87056eeb94a"
+
+    Start-Process -Wait -FilePath $filename -ArgumentList "/q"
+    del $filename
 }
 
 function InstallOpenSSL() {
@@ -77,7 +88,7 @@ function ImportCertificate($certFilePfx, $pfxPassword) {
 }
 
 function RemoveExistingWinRMHttpsListener() {
-    $httpsListener = Get-Item -Path wsman:\localhost\listener\* | where {$_.Keys.Contains("Transport=HTTPS")}
+    $httpsListener = Get-Item -Path wsman:\localhost\listener\* | where {$_.Keys | where { $_ -eq "Transport=HTTPS"} }
     if ($httpsListener) {
         Remove-Item -Recurse -Force -Path ("wsman:\localhost\listener\" + $httpsListener.Name)
     }
@@ -90,6 +101,11 @@ function CreateWinRMHttpsFirewallRule() {
 
 $certFilePfx = "server_cert.p12"
 $pfxPassword = "Passw0rd"
+
+$osVer = [System.Environment]::OSVersion.Version
+if ($osVer.Major -eq 6 -and $osVer.Minor -le 1) {
+    InstallVCRedist2008
+}
 
 InstallOpenSSL
 
@@ -104,6 +120,8 @@ RemoveExistingWinRMHttpsListener
 New-Item -Path wsman:\localhost\listener -transport https -address * -CertificateThumbPrint $certThumbprint -Force
 
 Set-Item wsman:\localhost\service\Auth\Basic -Value $true
+# Increase the timeout for long running scripts
+Set-Item wsman:\localhost\MaxTimeoutms -Value 1800000
 
 CreateWinRMHttpsFirewallRule
 
