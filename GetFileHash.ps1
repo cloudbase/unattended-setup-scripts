@@ -31,7 +31,7 @@ function Get-FileHash {
         }
         finally {
             $f.Close()
-            if($sham) { $sham.Dispose() }
+            if($sham) { $sham.Clear() }
         }
     }
 }
