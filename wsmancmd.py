@@ -85,7 +85,7 @@ def main():
     else:
         std_out, std_err, exit_code = run_wsman_cmd(url, username, password,
                                                     cmd)
-        sys.stderr.write(std_out)
+        sys.stdout.write(std_out)
         sys.stderr.write(std_err)
 
     sys.exit(exit_code)
