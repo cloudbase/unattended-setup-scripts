@@ -23,13 +23,25 @@ Add-Type -TypeDefinition @"
             Destination,
             Source
         }
+
+        [System.Flags]
+        public enum PortType
+        {
+            Host = 1,
+            External = 2
+        }
     }
 "@
 
-function GetSwitchEthernetPortAllocationSettingData($vswitchName) {
+function GetSwitchEthernetPortAllocationSettingData($vswitchName, $portType) {
     $eps = @()
-    $eps += gwmi -Namespace $ns -Class Msvm_ExternalEthernetPort
-    $eps += gwmi -Namespace $ns -Class Msvm_InternalEthernetPort
+    if($portType -band [cloudbase.PortType]::External) {
+        $eps += gwmi -Namespace $ns -Class Msvm_ExternalEthernetPort
+    }
+    if($portType -band [cloudbase.PortType]::Host) {
+        $eps += gwmi -Namespace $ns -Class Msvm_InternalEthernetPort
+    }
+
     foreach($ep in $eps) {
         $lep1 = gwmi -Namespace $ns -Query "ASSOCIATORS OF {$ep} WHERE ResultClass=Msvm_LANEndpoint AssocClass=Msvm_EthernetDeviceSAPImplementation"
         if($lep1) {
@@ -37,12 +49,10 @@ function GetSwitchEthernetPortAllocationSettingData($vswitchName) {
             $eswp = gwmi -Namespace $ns -Query "ASSOCIATORS OF {$lep2} WHERE ResultClass=Msvm_EthernetSwitchPort AssocClass=Msvm_EthernetDeviceSAPImplementation"
             $sw = gwmi -Namespace $ns -Query "ASSOCIATORS OF {$eswp} WHERE ResultClass=Msvm_VirtualEthernetSwitch"
             if($sw.ElementName -eq $vswitchName) {
-                return gwmi -Namespace $ns -Query "ASSOCIATORS OF {$eswp} WHERE ResultClass=Msvm_EthernetPortAllocationSettingData AssocClass=Msvm_ElementSettingData"
+                gwmi -Namespace $ns -Query "ASSOCIATORS OF {$eswp} WHERE ResultClass=Msvm_EthernetPortAllocationSettingData AssocClass=Msvm_ElementSettingData"
             }
         }
     }
-
-    throw "No internal or external VMSwitch named ""$vswitchName"" was found"
 }
 
 function CheckJob($out) {
@@ -74,12 +84,24 @@ function Get-VMSwitchPortMonitorMode() {
     )
 
     process {
-        $epasd = GetSwitchEthernetPortAllocationSettingData $SwitchName
-        $espssd = GetEthernetSwitchPortSecuritySettingData $epasd
-        if ($espssd) {
-            [cloudbase.PortMonitorMode]$espssd.MonitorMode
-        } else {
-            [cloudbase.PortMonitorMode]::None
+        $portTypes = @([cloudbase.PortType]::External, [cloudbase.PortType]::Host)
+
+        foreach($portType in $portTypes) {
+            $epasds = GetSwitchEthernetPortAllocationSettingData $SwitchName $portType
+            foreach($epasd in $epasds) {
+                $monitorModeInfo = New-Object -TypeName PSObject
+                Add-Member -InputObject $monitorModeInfo -MemberType NoteProperty -Name "PortType" -Value $portType
+
+                $espssd = GetEthernetSwitchPortSecuritySettingData $epasd
+                if ($espssd) {
+                    $mode = [cloudbase.PortMonitorMode]$espssd.MonitorMode
+                } else {
+                    $mode = [cloudbase.PortMonitorMode]::None
+                }
+
+                Add-Member -InputObject $monitorModeInfo -MemberType NoteProperty -Name "MonitorMode" -Value $mode
+                $monitorModeInfo
+            }
         }
     }
 }
@@ -87,26 +109,33 @@ function Get-VMSwitchPortMonitorMode() {
 function Set-VMSwitchPortMonitorMode() {
      param(
         [Parameter(ValueFromPipeline=$true, Position=0, Mandatory=$true)] [string] $SwitchName,
-        [Parameter(Position=1, Mandatory=$true)] [cloudbase.PortMonitorMode] $MonitorMode
+        [Parameter(Position=1, Mandatory=$true)] [cloudbase.PortMonitorMode] $MonitorMode,
+        [Parameter(Position=2)] [cloudbase.PortType] $PortType = [cloudbase.PortType]::External -bor [cloudbase.PortType]::Host
     )
 
     process {
-        $epasd = GetSwitchEthernetPortAllocationSettingData $SwitchName
-        $espssd = GetEthernetSwitchPortSecuritySettingData $epasd
-
-        if ($espssd) {
-            if($espssd.MonitorMode -ne [int]$MonitorMode) {
-                $espssd.MonitorMode = [int]$MonitorMode
-                $svc = gwmi -Namespace $ns -Class Msvm_VirtualEthernetSwitchManagementService
-                CheckJob $svc.ModifyFeatureSettings(@($espssd.GetText(1)))
-            }
+        $epasds = GetSwitchEthernetPortAllocationSettingData $SwitchName $PortType
+        if(!$epasds) {
+            throw "Port for VMSwitch named ""$vswitchName"" not found"
         } else {
-            if($MonitorMode -ne [int][cloudbase.PortMonitorMode]::None) {
-                $espssd = gwmi -Namespace $ns -Class Msvm_EthernetSwitchPortSecuritySettingData | where { $_.InstanceId.EndsWith("\Default") }
-                $espssd.MonitorMode = [int]$MonitorMode
-                $svc = gwmi -Namespace $ns -Class Msvm_VirtualEthernetSwitchManagementService
-                CheckJob $svc.AddFeatureSettings($epasd, @($espssd.GetText(1)))
-            }
+            foreach($epasd in $epasds) {
+                $espssd = GetEthernetSwitchPortSecuritySettingData $epasd
+
+                if ($espssd) {
+                    if($espssd.MonitorMode -ne [int]$MonitorMode) {
+                        $espssd.MonitorMode = [int]$MonitorMode
+                        $svc = gwmi -Namespace $ns -Class Msvm_VirtualEthernetSwitchManagementService
+                        CheckJob $svc.ModifyFeatureSettings(@($espssd.GetText(1)))
+                    }
+                } else {
+                    if($MonitorMode -ne [int][cloudbase.PortMonitorMode]::None) {
+                        $espssd = gwmi -Namespace $ns -Class Msvm_EthernetSwitchPortSecuritySettingData | where { $_.InstanceId.EndsWith("\Default") }
+                        $espssd.MonitorMode = [int]$MonitorMode
+                        $svc = gwmi -Namespace $ns -Class Msvm_VirtualEthernetSwitchManagementService
+                        CheckJob $svc.AddFeatureSettings($epasd, @($espssd.GetText(1)))
+                    }
+                }
+             }
         }
     }
 }
