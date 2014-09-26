@@ -26,20 +26,17 @@ Add-Type -TypeDefinition @"
     }
 "@
 
-function GetSwitchEthernetPortAllocationSettingData($vswitchName)
-{
+function GetSwitchEthernetPortAllocationSettingData($vswitchName) {
     $eps = @()
     $eps += gwmi -Namespace $ns -Class Msvm_ExternalEthernetPort
     $eps += gwmi -Namespace $ns -Class Msvm_InternalEthernetPort
-    foreach($ep in $eps)
-    {
+    foreach($ep in $eps) {
         $lep1 = gwmi -Namespace $ns -Query "ASSOCIATORS OF {$ep} WHERE ResultClass=Msvm_LANEndpoint AssocClass=Msvm_EthernetDeviceSAPImplementation"
         if($lep1) {
             $lep2 = gwmi -Namespace $ns -Query "ASSOCIATORS OF {$lep1} WHERE ResultClass=Msvm_LANEndpoint AssocClass=Msvm_ActiveConnection"
             $eswp = gwmi -Namespace $ns -Query "ASSOCIATORS OF {$lep2} WHERE ResultClass=Msvm_EthernetSwitchPort AssocClass=Msvm_EthernetDeviceSAPImplementation"
             $sw = gwmi -Namespace $ns -Query "ASSOCIATORS OF {$eswp} WHERE ResultClass=Msvm_VirtualEthernetSwitch"
-            if($sw.ElementName -eq $vswitchName)
-            {
+            if($sw.ElementName -eq $vswitchName) {
                 return gwmi -Namespace $ns -Query "ASSOCIATORS OF {$eswp} WHERE ResultClass=Msvm_EthernetPortAllocationSettingData AssocClass=Msvm_ElementSettingData"
             }
         }
