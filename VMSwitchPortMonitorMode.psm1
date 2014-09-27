@@ -68,6 +68,8 @@ function CheckJob($out) {
                     } else {
                         throw $job.ErrorDescription
                     }
+                } else {
+                    Start-Sleep -Milliseconds 200
                 }
             } while ($true)
         }
@@ -116,7 +118,7 @@ function Set-VMSwitchPortMonitorMode() {
     process {
         $epasds = GetSwitchEthernetPortAllocationSettingData $SwitchName $PortType
         if(!$epasds) {
-            throw "Port for VMSwitch named ""$vswitchName"" not found"
+            throw "Port for VMSwitch named ""$SwitchName"" not found"
         } else {
             foreach($epasd in $epasds) {
                 $espssd = GetEthernetSwitchPortSecuritySettingData $epasd
