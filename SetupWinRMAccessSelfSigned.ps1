@@ -29,10 +29,10 @@ function InstallVCRedist2008() {
 
 function InstallOpenSSL() {
     if (!(Test-Path $opensslPath)) {
-        $filename = "Win32OpenSSL_Light-1_0_1i.exe"
+        $filename = "Win32OpenSSL_Light-1_0_1j.exe"
         Start-BitsTransfer -Source "http://slproweb.com/download/$filename" -Destination $filename
 
-        VerifyHash $filename "439BA19F18803432E39F0056209B010A63B96644"
+        VerifyHash $filename "B471AED376270A6ECB087FF9CD9E28848A0B9261"
 
         Start-Process -Wait -FilePath $filename -ArgumentList "/silent /verysilent /sp- /suppressmsgboxes"
         del $filename
