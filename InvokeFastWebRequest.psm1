@@ -10,6 +10,8 @@ function Invoke-FastWebRequest
     )
     PROCESS
     {
+        $assembly = [System.Reflection.Assembly]::LoadWithPartialName("System.Net.Http")
+        
         $client = new-object System.Net.Http.HttpClient
         $task = $client.GetAsync($Uri)        
         $task.wait()
@@ -27,7 +29,7 @@ function Invoke-FastWebRequest
             $contentLength = $response.Content.Headers.ContentLength
 
             $totRead = 0
-            $buffer = New-Object Byte[] 1024
+            $buffer = New-Object Byte[] 1MB
             while (($read = $inStream.Read($buffer, 0, $buffer.Length)) -gt 0)
             {
                 $totRead += $read
