@@ -1,3 +1,5 @@
+$ErrorActionPreference = "Stop"
+
 # Nano server does not include Invoke-WebRequest
 function Invoke-FastWebRequest
 {
