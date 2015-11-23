@@ -10,14 +10,19 @@ function Invoke-FastWebRequest
     )
     PROCESS
     {
-        $assembly = [System.Reflection.Assembly]::LoadWithPartialName("System.Net.Http")
-        
+        if(!([System.Management.Automation.PSTypeName]'System.Net.Http.HttpClient').Type)
+        {
+            $assembly = [System.Reflection.Assembly]::LoadWithPartialName("System.Net.Http")
+        }
+
+        [Environment]::CurrentDirectory = (pwd).Path
+
         $client = new-object System.Net.Http.HttpClient
-        $task = $client.GetAsync($Uri)        
+        $task = $client.GetAsync($Uri)
         $task.wait()
-        $response = $task.Result        
+        $response = $task.Result
         $status = $response.EnsureSuccessStatusCode()
-        
+
         $outStream = New-Object IO.FileStream $OutFile, Create, Write, None
 
         try
@@ -25,7 +30,7 @@ function Invoke-FastWebRequest
             $task = $response.Content.ReadAsStreamAsync()
             $task.Wait()
             $inStream = $task.Result
-            
+
             $contentLength = $response.Content.Headers.ContentLength
 
             $totRead = 0
@@ -48,4 +53,3 @@ function Invoke-FastWebRequest
         }
     }
 }
-
