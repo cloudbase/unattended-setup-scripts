@@ -7,7 +7,7 @@ function Invoke-FastWebRequest
     Param(
     [Parameter(Mandatory=$True,ValueFromPipeline=$true,Position=0)]
     [System.Uri]$Uri,
-    [Parameter(Mandatory=$True,Position=1)]
+    [Parameter(Position=1)]
     [string]$OutFile
     )
     PROCESS
@@ -18,6 +18,15 @@ function Invoke-FastWebRequest
         }
 
         [Environment]::CurrentDirectory = (pwd).Path
+
+        if(!$OutFile)
+        {
+            $OutFile = $Uri.PathAndQuery.Substring($Uri.PathAndQuery.LastIndexOf("/") + 1)
+            if(!$OutFile)
+            {
+                throw "The ""OutFile"" parameter needs to be specified"
+            }
+        }
 
         $client = new-object System.Net.Http.HttpClient
         $task = $client.GetAsync($Uri)
