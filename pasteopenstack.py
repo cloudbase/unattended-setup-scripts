@@ -1,6 +1,8 @@
 #!/usr/bin/python
 import sys
-from xmlrpclib import ServerProxy
+
+import six
+import six.moves.xmlrpc_client as xmlrpclib
 
 if len(sys.argv) > 1:
     filename = sys.argv[1]
@@ -10,7 +12,7 @@ else:
     filename = 'stdin'
     text = sys.stdin.read()
 
-s = ServerProxy('http://paste.openstack.org/xmlrpc/', allow_none=True);
+s = xmlrpclib.ServerProxy('http://paste.openstack.org/xmlrpc/', allow_none=True);
 id = s.pastes.newPaste(None, text, None, filename)
 
 print('http://paste.openstack.org/show/%s/' % id)
