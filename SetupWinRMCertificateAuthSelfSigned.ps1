@@ -21,7 +21,10 @@ $secure_password = ConvertTo-SecureString $password -AsPlainText -Force
 $cred = New-Object System.Management.Automation.PSCredential "$ENV:COMPUTERNAME\$username", $secure_password
 
 # Get the UPN from the cert extension
-$clientcert.Extensions[1].Format($false) -match ".*=(.*)"
-$upn = $Matches[1]
+$Matches = $clientcert.Extensions[1].Format($false)
 
+# extract the part of the string that we need
+$upn = $Matches.Substring(26) #copy from position 26 inclusive to the end
+
+# Map the certificate for the winrm server to know which client connects
 New-Item -Path WSMan:\localhost\ClientCertificate -Issuer $clientcert.Thumbprint -Subject $upn -Uri * -Credential $cred -Force
