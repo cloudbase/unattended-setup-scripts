@@ -7,7 +7,7 @@ echo "Getting Keystone token"
 
 TOKENS_RESP=`curl -s -k -X 'POST' $OS_AUTH_URL/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT_NAME'"}}' -H 'Content-type: application/json'`
 TOKEN=`echo $TOKENS_RESP | python -c "import json; import sys; d=json.load(sys.stdin); print d['access']['token']['id']"`
-NOVA_URL=`echo $TOKENS_RESP | python -c "import json; import sys; d=json.load(sys.stdin); print d['access']['serviceCatalog'][0]['endpoints'][0]['adminURL']"`
+NOVA_URL=`echo $TOKENS_RESP | python -c "import json; import sys; d=json.load(sys.stdin); print([c for c in d['access']['serviceCatalog'] if c['name'] == 'nova'][0]['endpoints'][0]['adminURL'])"`
 
 echo "Getting RDP console"
 
