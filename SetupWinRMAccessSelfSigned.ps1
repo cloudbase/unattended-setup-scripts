@@ -27,12 +27,48 @@ function InstallVCRedist2008() {
     del $filename
 }
 
+function GetLatestOpenSSLPackage() {
+    $filename = "win32_openssl_hashes.json"
+    Start-BitsTransfer -Source "https://slproweb.com/download/$filename" -Destination $filename
+
+    $files = (ConvertFrom-Json (Get-Content $filename -Raw)).files
+    
+    del $filename
+
+    $members = foreach($file in ($files | Get-Member -MemberType NoteProperty)) {
+        if ($file.Name -like "Win32*" -and $file.Name -like "*Light*") {
+            $file
+        }
+    }
+
+    $latest = $null
+    foreach($member in $members) {
+        $current = $files.($member.Name)
+        if ($latest -ne $null) {
+            if ([System.Version]$latest.basever -lt [System.Version]$current.basever) {
+                $latest = $current
+            }
+        }
+        else {
+            $latest = $current
+        }
+    }
+
+    Return $latest
+}
+
 function InstallOpenSSL() {
     if (!(Test-Path $opensslPath)) {
-        $filename = "Win32OpenSSL_Light-1_1_0e.exe"
-        Start-BitsTransfer -Source "http://slproweb.com/download/$filename" -Destination $filename
+        $latestPackage = GetLatestOpenSSLPackage
+        if($latestPackage -eq $null) {
+            throw "Failed to get latest version of OpenSSL from slproweb.com"
+        }
 
-        VerifyHash $filename "0e94795cb994a7a9663fb636cc64061c01807113"
+        $filename = Split-Path $latestPackage.url -leaf
+
+        Start-BitsTransfer -Source $latestPackage.url -Destination $filename
+
+        VerifyHash $filename $latestPackage.sha1
 
         Start-Process -Wait -FilePath $filename -ArgumentList "/silent /verysilent /sp- /suppressmsgboxes"
         del $filename
